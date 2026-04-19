@@ -1077,7 +1077,7 @@ workflow:
           \                \"message\": \"The base_json input could not be parsed.\"\
           ,\n                \"details\": str(exc),\n            },\n            \"\
           execution_results\": execution_results,\n        }\n\n    return {\"final_payload\"\
-          : json.dumps(merged_dict)}\n"
+          : json.dumps(merged_dict, ensure_ascii=False)}\n"
         code_language: python3
         outputs:
           final_payload:

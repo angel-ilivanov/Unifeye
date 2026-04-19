@@ -25,8 +25,8 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "UNIFEYE Command Center",
-  description: "Autonomous campus task dashboard",
+  title: "UNIFEYE Dashboard",
+  description: "UNIFEYE academic workspace dashboard",
 };
 
 export default function RootLayout({

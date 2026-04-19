@@ -10,10 +10,11 @@ import { useId, useRef, useState } from "react";
 import {
   CircleAlert,
   CloudUpload,
-  Eye,
   RefreshCw,
   ScanEye,
 } from "lucide-react";
+
+import { UnifeyeMark } from "./unifeye-logo";
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024;
 const ACCEPT_ATTRIBUTE =
@@ -276,40 +277,19 @@ export default function DocumentIngestion({
   }
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className="glass-panel rounded-[32px] p-4 shadow-[0_30px_90px_rgba(0,0,0,0.45)] md:p-6"
-    >
-      <div className="mb-5 flex flex-col gap-3 border-b border-white/6 pb-5 md:flex-row md:items-center md:justify-between">
-        <div>
-          <div className="mb-2 flex items-center gap-2 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--color-primary)]">
-            <CloudUpload className="h-4 w-4" strokeWidth={1.8} />
-            Document Intake
-          </div>
-          <h2 className="font-display text-xl font-semibold text-white md:text-2xl">
-            Initialize a new study plan from your real course material.
-          </h2>
-        </div>
-        <div className="rounded-full border border-white/8 bg-white/4 px-3 py-1 text-[11px] font-mono uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]">
-          Secure upload proxy
-        </div>
-      </div>
-
+    <form onSubmit={onSubmit} className="space-y-4">
       <label
         htmlFor={inputId}
         onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`relative block overflow-hidden rounded-[28px] border-2 border-dashed px-6 py-14 text-center transition-all duration-500 md:px-10 md:py-20 ${
-          isUploading
-            ? "border-[var(--color-primary)]/30 bg-[rgba(10,13,20,0.82)]"
-            : isDragging
-              ? "border-[var(--color-primary)]/40 bg-[rgba(10,13,20,0.82)]"
-              : "border-white/8 bg-[rgba(10,13,20,0.6)] hover:border-[var(--color-primary)]/24 hover:bg-[rgba(10,13,20,0.8)]"
+        className={`block rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface-container)] p-4 transition-colors md:p-5 ${
+          isUploading || isDragging
+            ? "border-[var(--color-primary)]/45"
+            : "hover:border-[var(--color-primary)]/28"
         }`}
       >
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(0,209,255,0.12),transparent_55%)] opacity-70" />
         <input
           ref={fileInputRef}
           id={inputId}
@@ -320,83 +300,90 @@ export default function DocumentIngestion({
           onChange={handleFileChange}
         />
 
-        <div className="relative z-10 mx-auto flex max-w-2xl flex-col items-center">
-          <div
-            className={`mb-6 flex h-18 w-18 items-center justify-center rounded-2xl border border-white/10 bg-[rgba(18,24,38,0.88)] transition-all duration-500 ${
-              isUploading ? "animate-breathe glow-cyan-strong" : "glow-cyan"
-            }`}
-          >
+        <div
+          className={`rounded-[16px] border border-dashed px-5 py-10 text-center md:px-8 md:py-14 ${
+            isUploading || isDragging
+              ? "border-[var(--color-primary)]/38 bg-[rgba(18,25,41,0.88)]"
+              : "border-[rgba(120,137,180,0.24)] bg-[rgba(18,24,38,0.58)]"
+          }`}
+        >
+          <div className="mx-auto flex max-w-3xl flex-col items-center">
+            <div
+              className={`flex h-16 w-16 items-center justify-center rounded-[16px] bg-[var(--color-surface-bright)] ${
+                isUploading ? "animate-breathe" : ""
+              }`}
+            >
+              {isUploading ? (
+                <ScanEye
+                  className="h-8 w-8 text-[var(--color-primary)]"
+                  strokeWidth={1.9}
+                />
+              ) : (
+                <UnifeyeMark className="h-8 w-[2.9rem]" />
+              )}
+            </div>
+
             {isUploading ? (
-              <ScanEye
-                className="h-8 w-8 text-[var(--color-primary)]"
-                strokeWidth={1.9}
-              />
-            ) : selectedFile ? (
-              <Eye
-                className="h-8 w-8 text-[var(--color-primary)]"
-                strokeWidth={1.9}
-              />
+              <>
+                <h2 className="mt-6 font-display text-2xl font-semibold text-white md:text-[2.25rem]">
+                  Scanning workspace
+                </h2>
+                <p className="mt-3 max-w-2xl font-mono text-sm leading-7 text-[var(--color-on-surface-variant)]">
+                  {statusMessage}
+                </p>
+              </>
             ) : (
-              <CloudUpload
-                className="h-8 w-8 text-[var(--color-primary)]"
-                strokeWidth={1.9}
-              />
+              <>
+                <h2 className="mt-6 font-display text-2xl font-semibold text-white md:text-[2.25rem]">
+                  Drop files here to initialize
+                </h2>
+                <p className="mt-3 max-w-2xl font-mono text-sm leading-7 text-[var(--color-on-surface-variant)]">
+                  Or click to browse. Supported formats: .pdf, .png, .jpg for
+                  automated parsing and assignment.
+                </p>
+              </>
             )}
-          </div>
 
-          {isUploading ? (
-            <>
-              <div className="font-mono text-sm font-semibold uppercase tracking-[0.28em] text-[var(--color-primary)] text-glow">
-                System scanning
-              </div>
-              <div className="mt-4 rounded-xl border border-[var(--color-primary)]/16 bg-black/30 px-4 py-3 font-mono text-xs text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] md:text-sm">
-                {statusMessage}
-              </div>
-            </>
-          ) : (
-            <>
-              <h3 className="font-display text-2xl font-semibold uppercase tracking-[0.12em] text-white md:text-3xl">
-                Drop files here to initialize
-              </h3>
-              <p className="mt-4 max-w-xl text-sm leading-7 text-[var(--color-on-surface-variant)] md:text-base">
-                Upload course documents or screenshots, then route the extracted
-                tasks into the command center with the new strategy view.
-              </p>
-            </>
-          )}
-
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-3 text-[11px] font-mono uppercase tracking-[0.24em] text-[var(--color-on-surface-variant)]">
-            <span className="rounded-full border border-white/8 bg-white/4 px-3 py-1">
-              PDF
-            </span>
-            <span className="rounded-full border border-white/8 bg-white/4 px-3 py-1">
-              PNG
-            </span>
-            <span className="rounded-full border border-white/8 bg-white/4 px-3 py-1">
-              JPG
-            </span>
-            <span className="rounded-full border border-white/8 bg-white/4 px-3 py-1">
-              15MB Max
-            </span>
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5 font-mono text-[0.68rem] uppercase tracking-[0.18em] text-[var(--color-on-surface-variant)]">
+              <span className="rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-bright)] px-3 py-1.5">
+                PDF
+              </span>
+              <span className="rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-bright)] px-3 py-1.5">
+                PNG
+              </span>
+              <span className="rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-bright)] px-3 py-1.5">
+                JPG
+              </span>
+              <span className="rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-bright)] px-3 py-1.5">
+                15MB max
+              </span>
+            </div>
           </div>
         </div>
       </label>
 
-      <div className="mt-5 rounded-[24px] border border-white/8 bg-[rgba(10,13,20,0.62)] p-4 md:p-5">
-        <div className="mb-4">
-          <div className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--color-primary)]">
-            Optional Zulip Access
+      <div className="rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface-container)] p-4">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_200px_200px_auto] xl:items-end">
+          <div>
+            <div className="font-mono text-[0.68rem] uppercase tracking-[0.24em] text-[var(--color-on-surface-variant)]">
+              Upload Queue
+            </div>
+            {selectedFile ? (
+              <div className="mt-3 flex flex-wrap items-center gap-3 rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface-bright)] px-4 py-3 text-sm text-white">
+                <span className="truncate font-medium">{selectedFile.name}</span>
+                <span className="font-mono text-[0.72rem] uppercase tracking-[0.18em] text-[var(--color-on-surface-variant)]">
+                  {formatFileSize(selectedFile.size)}
+                </span>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm leading-7 text-[var(--color-on-surface-variant)]">
+                Click to browse or drag a file into the area above, then run the
+                analysis.
+              </p>
+            )}
           </div>
-          <p className="mt-2 max-w-2xl text-sm leading-7 text-[var(--color-on-surface-variant)]">
-            Leave these blank if you only want document analysis. Add them when
-            you want the workflow to personalize or validate Zulip actions with
-            your own account details.
-          </p>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
           <label className="block">
-            <span className="mb-2 block text-[11px] font-mono uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]">
+            <span className="mb-2 block font-mono text-[0.68rem] uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]">
               Zulip email
             </span>
             <input
@@ -407,81 +394,61 @@ export default function DocumentIngestion({
               disabled={isUploading}
               onChange={(event) => setZulipEmail(event.target.value)}
               placeholder="you@tum.de"
-              className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[var(--color-primary)]/45 focus:bg-black/40"
+              className="w-full rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface-bright)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[var(--color-primary)]/40"
             />
           </label>
 
           <label className="block">
-            <span className="mb-2 block text-[11px] font-mono uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]">
+            <span className="mb-2 block font-mono text-[0.68rem] uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]">
               Zulip API key
             </span>
             <input
               id={zulipApiKeyId}
-              type="text"
+              type="password"
               autoComplete="off"
               value={zulipApiKey}
               disabled={isUploading}
               onChange={(event) => setZulipApiKey(event.target.value)}
               placeholder="Optional"
-              className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[var(--color-primary)]/45 focus:bg-black/40"
+              className="w-full rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface-bright)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[var(--color-primary)]/40"
             />
           </label>
-        </div>
-      </div>
 
-      <div className="mt-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="min-h-10">
-          {selectedFile ? (
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-white/4 px-3 py-2 text-sm text-white">
-              <Eye className="h-4 w-4 text-[var(--color-primary)]" />
-              <span className="max-w-[220px] truncate md:max-w-[320px]">
-                {selectedFile.name}
-              </span>
-              <span className="text-xs text-[var(--color-on-surface-variant)]">
-                {formatFileSize(selectedFile.size)}
-              </span>
-            </div>
-          ) : (
-            <div className="text-sm text-[var(--color-on-surface-variant)]">
-              Select a file to replace the placeholder plan with a live upload.
-            </div>
-          )}
-        </div>
+          <div className="flex flex-wrap gap-3 xl:justify-end">
+            {selectedFile ? (
+              <button
+                type="button"
+                onClick={clearSelectedFile}
+                disabled={isUploading}
+                className="inline-flex items-center justify-center rounded-[12px] border border-[var(--color-border)] px-4 py-3 text-sm font-semibold text-[var(--color-on-surface-variant)] transition hover:border-white/25 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Clear file
+              </button>
+            ) : null}
 
-        <div className="flex flex-wrap gap-3">
-          {selectedFile ? (
             <button
-              type="button"
-              onClick={clearSelectedFile}
-              disabled={isUploading}
-              className="inline-flex items-center justify-center rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-[var(--color-on-surface-variant)] transition hover:border-white/20 hover:bg-white/4 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              type="submit"
+              disabled={!selectedFile || isUploading}
+              className="inline-flex items-center justify-center gap-2 rounded-[12px] border border-[var(--color-primary)] bg-[var(--color-primary)] px-5 py-3 text-sm font-semibold text-[#04101a] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Clear file
+              {isUploading ? (
+                <>
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  Analyzing
+                </>
+              ) : (
+                <>
+                  <CloudUpload className="h-4 w-4" />
+                  Analyze document
+                </>
+              )}
             </button>
-          ) : null}
-
-          <button
-            type="submit"
-            disabled={!selectedFile || isUploading}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] px-5 py-2.5 text-sm font-semibold text-[#02141a] transition hover:-translate-y-0.5 hover:shadow-[0_0_28px_rgba(0,209,255,0.35)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
-          >
-            {isUploading ? (
-              <>
-                <RefreshCw className="h-4 w-4 animate-spin" />
-                Analyzing
-              </>
-            ) : (
-              <>
-                <CloudUpload className="h-4 w-4" />
-                Analyze document
-              </>
-            )}
-          </button>
+          </div>
         </div>
       </div>
 
       {errorMessage ? (
-        <div className="mt-4 flex items-start gap-3 rounded-2xl border border-rose-400/16 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+        <div className="flex items-start gap-3 rounded-[14px] border border-rose-400/18 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
           <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{errorMessage}</span>
         </div>

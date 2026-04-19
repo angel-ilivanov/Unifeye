@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useDeferredValue, useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import {
   ArrowUpRight,
   BarChart3,
@@ -9,19 +9,17 @@ import {
   ChevronRight,
   Circle,
   CircleAlert,
-  Eye,
   GraduationCap,
   History,
   LayoutDashboard,
+  ListTodo,
   Network,
   RefreshCw,
-  ScanEye,
-  Search,
-  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 
 import DocumentIngestion from "./DocumentIngestion";
+import UnifeyeLogo, { UnifeyeMark } from "./unifeye-logo";
 
 type PrioritizedCourseLink = {
   course_name: string;
@@ -121,23 +119,8 @@ type SidebarNode = {
   tone: SidebarNodeTone;
 };
 
-type StatCard = {
-  label: string;
-  value: number;
-  delta: string;
-  deltaClassName: "delta-up" | "delta-dn" | "delta-flat";
-};
-
 type UploadContext = {
   fileName: string;
-};
-
-type OverviewPanelsProps = {
-  feedEntries: string[];
-  nodes: SidebarNode[];
-  pendingActionCount: number;
-  queuePreview: string[];
-  taskName: string;
 };
 
 const NAV_ITEMS: NavItem[] = [
@@ -149,11 +132,52 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const STATUS_MESSAGES = [
-  "[INGESTING] Analyzing uploaded document...",
-  "[PARSING] Extracting deadlines and tasks...",
-  "[MAPPING] Routing actions into campus systems...",
-  "[SYNC] Building the next execution plan...",
+  "Analyzing uploaded document...",
+  "Extracting tasks and deadlines...",
+  "Routing actions into campus systems...",
+  "Building the updated workspace...",
 ];
+
+const TUMONLINE_PARENT_COURSE_PATTERN =
+  /\b(tutorial|tutorials|ubung|ubungen|uebung|uebungen)\b/;
+
+const COURSE_HINT_STOP_WORDS = new Set([
+  "an",
+  "and",
+  "course",
+  "courses",
+  "das",
+  "der",
+  "die",
+  "ein",
+  "eine",
+  "for",
+  "fur",
+  "group",
+  "groups",
+  "in",
+  "of",
+  "register",
+  "registration",
+  "session",
+  "sessions",
+  "the",
+  "tutorial",
+  "tutorials",
+  "ubung",
+  "ubungen",
+  "uebung",
+  "uebungen",
+  "zu",
+  "zum",
+  "zur",
+]);
+
+type CourseMatchHints = {
+  aliases: Set<string>;
+  codes: Set<string>;
+  keywords: Set<string>;
+};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -161,6 +185,131 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isActionPriority(value: string): value is ActionPriority {
   return value === "do_now" || value === "schedule";
+}
+
+function normalizeLookupText(value: string) {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function isTutorialLikeTumonlineTitle(title: string) {
+  return TUMONLINE_PARENT_COURSE_PATTERN.test(normalizeLookupText(title));
+}
+
+function extractCourseMatchHints(title: string): CourseMatchHints {
+  const normalizedTitle = normalizeLookupText(title);
+  const aliases = new Set<string>();
+
+  for (const match of title.matchAll(/\(([A-Za-z0-9\s-]+)\)/g)) {
+    const normalizedMatch = normalizeLookupText(match[1]);
+
+    for (const token of normalizedMatch.split(/[^a-z0-9]+/)) {
+      if (token.length >= 2 && !COURSE_HINT_STOP_WORDS.has(token)) {
+        aliases.add(token);
+      }
+    }
+  }
+
+  for (const match of title.matchAll(/\b[A-Z]{2,}\d*[A-Z0-9]*\b/g)) {
+    aliases.add(normalizeLookupText(match[0]));
+  }
+
+  const codes = new Set(
+    normalizedTitle.match(/\b[a-z]{2,}\d{3,}[a-z0-9]*\b/g) ?? [],
+  );
+  const keywords = new Set(
+    (normalizedTitle.match(/\b[a-z0-9]{3,}\b/g) ?? []).filter(
+      (token) => !COURSE_HINT_STOP_WORDS.has(token),
+    ),
+  );
+
+  return {
+    aliases,
+    codes,
+    keywords,
+  };
+}
+
+function countSharedHints(left: Set<string>, right: Set<string>) {
+  let count = 0;
+
+  for (const entry of left) {
+    if (right.has(entry)) {
+      count += 1;
+    }
+  }
+
+  return count;
+}
+
+function scoreTumonlineCourseMatch(
+  currentItem: CourseMatchHints,
+  candidateItem: CourseMatchHints,
+) {
+  const sharedCodes = countSharedHints(currentItem.codes, candidateItem.codes);
+  const sharedAliases = countSharedHints(
+    currentItem.aliases,
+    candidateItem.aliases,
+  );
+  const sharedKeywords = countSharedHints(
+    currentItem.keywords,
+    candidateItem.keywords,
+  );
+
+  return sharedCodes * 100 + sharedAliases * 30 + sharedKeywords * 5;
+}
+
+function remapTumonlineChildCourseLinks(items: ActionItem[]) {
+  const canonicalCourses = items
+    .filter(
+      (item) =>
+        item.source === "TUMonline Courses" &&
+        !isTutorialLikeTumonlineTitle(item.title) &&
+        typeof item.searchUrl === "string" &&
+        item.searchUrl.trim().length > 0,
+    )
+    .map((item) => ({
+      hints: extractCourseMatchHints(item.title),
+      searchUrl: item.searchUrl as string,
+    }));
+
+  if (canonicalCourses.length === 0) {
+    return items;
+  }
+
+  return items.map((item) => {
+    if (
+      item.source !== "TUMonline Courses" ||
+      !isTutorialLikeTumonlineTitle(item.title)
+    ) {
+      return item;
+    }
+
+    const itemHints = extractCourseMatchHints(item.title);
+    let bestMatch: { score: number; searchUrl: string } | null = null;
+
+    for (const candidate of canonicalCourses) {
+      const score = scoreTumonlineCourseMatch(itemHints, candidate.hints);
+
+      if (!bestMatch || score > bestMatch.score) {
+        bestMatch = {
+          score,
+          searchUrl: candidate.searchUrl,
+        };
+      }
+    }
+
+    if (!bestMatch || bestMatch.score <= 0) {
+      return item;
+    }
+
+    return {
+      ...item,
+      searchUrl: bestMatch.searchUrl,
+    };
+  });
 }
 
 function getActionKey(
@@ -248,11 +397,12 @@ function collectActionItems(
     },
   );
 
-  return [...zulipItems, ...artemisItems, ...tumCourseItems, ...tumExamItems];
-}
-
-function uniqueTitles(items: ActionItem[]) {
-  return Array.from(new Set(items.map((item) => item.title)));
+  return [
+    ...zulipItems,
+    ...artemisItems,
+    ...remapTumonlineChildCourseLinks(tumCourseItems),
+    ...tumExamItems,
+  ];
 }
 
 function extractCourseCode(title: string, priority: ActionPriority) {
@@ -352,7 +502,6 @@ function buildSidebarNodes(
   const tumonlineItems = actionItems.filter(
     (item) => item.actionType === "tumonline",
   );
-
   const zulipTone: SidebarNodeTone =
     zulipStatus.status === "complete"
       ? "dg"
@@ -385,18 +534,153 @@ function buildSidebarNodes(
 function getPriorityPresentation(priority: ActionPriority) {
   return priority === "do_now"
     ? {
-        badgeLabel: "High",
-        badgeClassName: "border-rose-400/20 bg-rose-500/12 text-rose-100",
+        badgeLabel: "Do now",
+        badgeClassName: "border-rose-400/18 bg-rose-500/10 text-rose-100",
         railClassName: "bg-rose-400/70",
-        summaryLabel: "Execute next",
+        summaryLabel: "Priority: do now",
       }
     : {
-        badgeLabel: "Queued",
+        badgeLabel: "Scheduled",
         badgeClassName:
           "border-[var(--color-primary)]/20 bg-[var(--color-primary)]/10 text-cyan-50",
         railClassName: "bg-[var(--color-primary)]/70",
-        summaryLabel: "Queue next",
+        summaryLabel: "Priority: scheduled",
       };
+}
+
+function getPlatformLabel(source: ActionItem["source"]) {
+  switch (source) {
+    case "Zulip":
+      return "Zulip main handoff";
+    case "TUMonline Courses":
+    case "TUMonline Exams":
+      return "TUMonline";
+    default:
+      return source;
+  }
+}
+
+function getTaskMetaLine(item: ActionItem) {
+  return `${getPriorityPresentation(item.priority).summaryLabel} | Platform: ${getPlatformLabel(
+    item.source,
+  )}`;
+}
+
+function resolveNavigationUrl(searchUrl?: string, fallbackUrl?: string) {
+  if (typeof searchUrl === "string") {
+    const trimmedSearchUrl = searchUrl.trim();
+
+    if (trimmedSearchUrl.length > 0) {
+      return trimmedSearchUrl;
+    }
+  }
+
+  return fallbackUrl;
+}
+
+function openPendingNavigationWindow(actionType: ActionType) {
+  if (typeof window === "undefined" || actionType === "zulip") {
+    return null;
+  }
+
+  const pendingWindow = window.open("", "_blank");
+
+  if (!pendingWindow) {
+    return null;
+  }
+
+  pendingWindow.document.title = "UNIFEYE";
+  pendingWindow.document.body.style.margin = "0";
+  pendingWindow.document.body.style.minHeight = "100vh";
+  pendingWindow.document.body.style.display = "grid";
+  pendingWindow.document.body.style.placeItems = "center";
+  pendingWindow.document.body.style.background = "#0b1120";
+  pendingWindow.document.body.style.color = "#f8fafc";
+  pendingWindow.document.body.style.fontFamily =
+    "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  pendingWindow.document.body.textContent = "Opening action...";
+
+  return pendingWindow;
+}
+
+function closePendingNavigationWindow(pendingWindow: Window | null) {
+  if (!pendingWindow || pendingWindow.closed) {
+    return;
+  }
+
+  pendingWindow.close();
+}
+
+function navigatePendingWindow(
+  pendingWindow: Window | null,
+  navigationUrl?: string,
+) {
+  const resolvedNavigationUrl = resolveNavigationUrl(navigationUrl);
+
+  if (!resolvedNavigationUrl || typeof window === "undefined") {
+    closePendingNavigationWindow(pendingWindow);
+    return;
+  }
+
+  if (pendingWindow && !pendingWindow.closed) {
+    pendingWindow.location.replace(resolvedNavigationUrl);
+    return;
+  }
+
+  window.open(resolvedNavigationUrl, "_blank", "noopener,noreferrer");
+}
+
+function getSuccessfulZulipItems(
+  actionItems: ActionItem[],
+  executionStates: Record<string, ActionExecutionState>,
+) {
+  return actionItems.filter(
+    (item) =>
+      item.actionType === "zulip" &&
+      executionStates[getActionKey(item)]?.status === "success",
+  );
+}
+
+function getPendingZulipItems(
+  actionItems: ActionItem[],
+  executionStates: Record<string, ActionExecutionState>,
+) {
+  return actionItems.filter(
+    (item) =>
+      item.actionType === "zulip" &&
+      executionStates[getActionKey(item)]?.status !== "success",
+  );
+}
+
+function uniqueActionItems(items: ActionItem[]) {
+  const seenKeys = new Set<string>();
+
+  return items.filter((item) => {
+    const actionKey = getActionKey(item);
+
+    if (seenKeys.has(actionKey)) {
+      return false;
+    }
+
+    seenKeys.add(actionKey);
+    return true;
+  });
+}
+
+function buildPreviewItems(
+  actionItems: ActionItem[],
+  executionStates: Record<string, ActionExecutionState>,
+) {
+  const joinedZulipItems = getSuccessfulZulipItems(actionItems, executionStates);
+  const nonExamItems = actionItems.filter(
+    (item) => item.source !== "TUMonline Exams",
+  );
+
+  return uniqueActionItems([
+    ...joinedZulipItems,
+    ...nonExamItems,
+    ...actionItems,
+  ]).slice(0, 4);
 }
 
 function getToneClasses(tone: SidebarNodeTone) {
@@ -563,13 +847,22 @@ function coerceExecutionResults(
     return null;
   }
 
+  const zulipChannels = toZulipChannels(
+    value.zulip_channels ?? value.zulipChannels,
+  );
+  const artemisCourses = toCourseLinks(
+    value.artemis_courses ?? value.artemisCourses,
+  );
+  const tumonlineCourses = toCourseLinks(
+    value.tumonline_courses ?? value.tumonlineCourses,
+  );
+
   return {
     zulip_status: toZulipStatus(value.zulip_status ?? value.zulipStatus),
-    zulip_channels: toZulipChannels(value.zulip_channels ?? value.zulipChannels),
-    artemis_courses: toCourseLinks(value.artemis_courses ?? value.artemisCourses),
-    tumonline_courses: toCourseLinks(
-      value.tumonline_courses ?? value.tumonlineCourses,
-    ),
+    zulip_channels: zulipChannels.length > 0 ? zulipChannels : undefined,
+    artemis_courses: artemisCourses.length > 0 ? artemisCourses : undefined,
+    tumonline_courses:
+      tumonlineCourses.length > 0 ? tumonlineCourses : undefined,
     artemis_link: toLinkedCourseGroup(value.artemis_link ?? value.artemisLink),
     tumonline_course_link: toLinkedCourseGroup(
       value.tumonline_course_link ?? value.tumonlineCourseLink,
@@ -676,32 +969,20 @@ function extractPayloadFromUnknown(value: unknown): CampusCopilotPayload | null 
   return null;
 }
 
-function matchesSearch(item: ActionItem, query: string) {
-  const normalizedQuery = query.trim().toLowerCase();
-
-  if (normalizedQuery.length === 0) {
-    return true;
-  }
-
-  return `${item.title} ${item.source} ${item.actionType}`
-    .toLowerCase()
-    .includes(normalizedQuery);
-}
-
 function NavButton({ item }: { item: NavItem }) {
   const Icon = item.icon;
 
   return (
     <button
       type="button"
-      className={`flex items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium transition ${
+      className={`flex w-full items-center gap-2.5 rounded-[13px] border px-3.5 py-3 text-left text-[0.95rem] transition ${
         item.active
-          ? "bg-[var(--color-primary)]/8 text-[var(--color-primary)]"
-          : "text-[var(--color-on-surface-variant)] hover:bg-white/5 hover:text-white"
+          ? "border-[rgba(32,203,255,0.28)] bg-[var(--color-surface-bright)] text-white shadow-[inset_2px_0_0_0_var(--color-primary)]"
+          : "border-transparent text-[var(--color-on-surface-variant)] hover:border-[var(--color-border)] hover:bg-[var(--color-surface-bright)]/60 hover:text-white"
       }`}
     >
-      <Icon className="h-5 w-5" strokeWidth={1.85} />
-      <span>{item.label}</span>
+      <Icon className="h-5 w-5 shrink-0" strokeWidth={1.8} />
+      <span className="font-medium">{item.label}</span>
     </button>
   );
 }
@@ -718,145 +999,91 @@ function Sidebar({
   pendingActionCount: number;
 }) {
   return (
-    <aside className="hidden border-r border-white/6 bg-[rgba(5,7,10,0.86)] lg:flex lg:min-h-screen lg:flex-col">
-      <div className="px-8 pb-10 pt-8">
-        <div className="flex items-center gap-3">
-          <div
-            className={`flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--color-primary)] text-[#03151b] ${
-              isUploading ? "animate-breathe glow-cyan-strong" : "glow-cyan"
-            }`}
-          >
-            {isUploading ? (
-              <ScanEye className="h-5 w-5" strokeWidth={2} />
-            ) : (
-              <Eye className="h-5 w-5" strokeWidth={2} />
-            )}
-          </div>
-          <div>
-            <div className="font-display text-xl font-bold uppercase tracking-[0.2em] text-white">
-              UNIFEYE
-            </div>
-            <div className="mt-1 text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]">
-              Autonomous workspace
-            </div>
-          </div>
-        </div>
+    <aside className="hidden border-r border-[var(--color-border)] bg-[#09101d] lg:flex lg:min-h-full lg:flex-col">
+      <div className="border-b border-[var(--color-border)] px-6 py-6">
+        <UnifeyeLogo
+          subtitle="workspace"
+          className={isUploading ? "animate-breathe" : ""}
+        />
       </div>
 
-      <nav className="space-y-1 px-4" aria-label="Primary">
+      <nav className="space-y-1.5 px-3 py-5" aria-label="Primary">
         {NAV_ITEMS.map((item) => (
           <NavButton key={item.id} item={item} />
         ))}
       </nav>
 
-      <div className="mx-6 my-6 h-px bg-white/6" />
-
-      <div className="px-6">
-        <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--color-on-surface-variant)]">
+      <div className="px-5 pt-3">
+        <div className="mb-4 font-mono text-[0.72rem] uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]">
           Active Courses
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {courses.length > 0 ? (
             courses.map((course) => (
               <div
                 key={course.name}
-                className={`rounded-2xl border px-4 py-3 transition ${
+                className={`rounded-[12px] border px-3.5 py-3 ${
                   course.active
-                    ? "border-[var(--color-primary)]/20 bg-[var(--color-primary)]/8"
-                    : "border-white/6 bg-white/[0.025]"
+                    ? "border-[rgba(32,203,255,0.24)] bg-[var(--color-surface-bright)]"
+                    : "border-[var(--color-border)] bg-[rgba(20,29,48,0.56)]"
                 }`}
               >
-                <div className="text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--color-primary)]">
+                <div className="font-mono text-[0.72rem] uppercase tracking-[0.18em] text-[#8ab8ff]">
                   [{course.code}]
                 </div>
-                <div className="mt-1 text-sm text-[var(--color-on-surface-variant)]">
+                <div className="mt-2 text-sm leading-6 text-[var(--color-on-surface)]/90">
                   {course.name}
                 </div>
               </div>
             ))
           ) : (
-            <div className="rounded-2xl border border-white/6 bg-white/[0.025] px-4 py-3 text-sm text-[var(--color-on-surface-variant)]">
-              New course actions will appear here after the first upload.
+            <div className="rounded-[12px] border border-[var(--color-border)] bg-[rgba(20,29,48,0.56)] px-4 py-3 text-sm text-[var(--color-on-surface-variant)]">
+              Upload a course document to populate the workspace.
             </div>
           )}
         </div>
       </div>
 
-      <div className="px-6 pt-8">
-        <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--color-on-surface-variant)]">
-          Institutional Nodes
+      <div className="mt-auto px-3 pb-4 pt-5">
+        <div className="rounded-[15px] border border-[var(--color-border)] bg-[var(--color-surface-bright)] p-3.5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#0d1423]">
+              <UnifeyeMark className="h-6 w-[2.25rem]" />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-white">Campus Agent</div>
+              <div className="text-xs text-[var(--color-on-surface-variant)]">
+                {pendingActionCount} open actions in this workspace
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="space-y-2">
+
+        <div className="mt-4 flex items-center justify-between font-mono text-[0.68rem] uppercase tracking-[0.18em] text-[var(--color-on-surface-variant)]">
+          <span>System Status</span>
+          <span className="text-[var(--color-primary)]">Active & synced</span>
+        </div>
+
+        <div className="mt-3 grid gap-2">
           {nodes.map((node) => (
             <div
               key={node.name}
-              className="flex items-center gap-3 rounded-2xl border border-white/6 bg-white/[0.025] px-4 py-3"
+              className="flex items-center gap-2 rounded-[12px] border border-[var(--color-border)] bg-[rgba(20,29,48,0.56)] px-3 py-2"
             >
               <span
                 className={`h-2.5 w-2.5 rounded-full ${getToneClasses(node.tone)}`}
               />
-              <span className="flex-1 text-sm text-[var(--color-on-surface-variant)]">
+              <span className="min-w-0 flex-1 truncate text-xs text-[var(--color-on-surface)]/92">
                 {node.name}
               </span>
-              <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-[var(--color-on-surface-variant)]">
+              <span className="font-mono text-[0.62rem] uppercase tracking-[0.16em] text-[var(--color-on-surface-variant)]">
                 {node.badge}
               </span>
             </div>
           ))}
         </div>
       </div>
-
-      <div className="mt-auto px-6 pb-6 pt-8">
-        <div className="glass-panel rounded-[24px] p-4">
-          <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_16px_rgba(52,211,153,0.45)]" />
-            Agent online
-          </div>
-          <div className="mt-4 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--color-primary)]/12 text-[var(--color-primary)]">
-              <Sparkles className="h-5 w-5" strokeWidth={1.8} />
-            </div>
-            <div>
-              <div className="text-sm font-semibold text-white">
-                Campus Co-Pilot
-              </div>
-              <div className="text-[11px] text-[var(--color-on-surface-variant)]">
-                {pendingActionCount} open actions in the active plan
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </aside>
-  );
-}
-
-function StatsRow({ stats }: { stats: StatCard[] }) {
-  return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      {stats.map((stat) => (
-        <div
-          key={stat.label}
-          className="glass-panel rounded-[24px] px-5 py-4 shadow-[0_18px_42px_rgba(0,0,0,0.22)]"
-        >
-          <div className="font-mono text-3xl font-bold text-[var(--color-primary)]">
-            {stat.value}
-          </div>
-          <div className="mt-2 text-sm font-medium text-white">{stat.label}</div>
-          <div
-            className={`mt-2 text-[10px] font-mono uppercase tracking-[0.22em] ${
-              stat.deltaClassName === "delta-up"
-                ? "text-emerald-300"
-                : stat.deltaClassName === "delta-dn"
-                  ? "text-rose-300"
-                  : "text-[var(--color-on-surface-variant)]"
-            }`}
-          >
-            {stat.delta}
-          </div>
-        </div>
-      ))}
-    </div>
   );
 }
 
@@ -868,12 +1095,12 @@ function EmptyState({
   title: string;
 }) {
   return (
-    <div className="flex min-h-[220px] flex-col items-center justify-center rounded-[28px] border border-dashed border-white/10 bg-white/[0.025] px-6 text-center">
-      <BookOpen className="h-8 w-8 text-[var(--color-primary)]/60" strokeWidth={1.7} />
-      <h3 className="mt-5 font-display text-xl font-semibold text-white">
+    <div className="flex min-h-[190px] flex-col items-center justify-center rounded-[16px] border border-dashed border-[var(--color-border)] bg-[rgba(20,29,48,0.44)] px-5 text-center">
+      <BookOpen className="h-8 w-8 text-[var(--color-primary)]/70" strokeWidth={1.7} />
+      <h3 className="mt-4 font-display text-lg font-semibold text-white">
         {title}
       </h3>
-      <p className="mt-3 max-w-sm text-sm leading-7 text-[var(--color-on-surface-variant)]">
+      <p className="mt-3 max-w-sm text-sm leading-6 text-[var(--color-on-surface-variant)]">
         {body}
       </p>
     </div>
@@ -887,20 +1114,24 @@ function PreviewTaskCard({
   executionState?: ActionExecutionState;
   item: ActionItem;
 }) {
+  const isZulipAction = item.actionType === "zulip";
   const isSuccess = executionState?.status === "success";
+  const isZulipJoined = isZulipAction && isSuccess;
   const needsAttention =
     executionState?.status === "error" ||
     executionState?.status === "manual_action_required";
-  const priorityPresentation = getPriorityPresentation(item.priority);
 
   return (
-    <article className="group relative overflow-hidden rounded-[24px] border border-white/8 bg-[rgba(15,17,26,0.9)] p-5 transition hover:border-[var(--color-primary)]/20">
-      <div className="absolute inset-x-0 top-0 h-px bg-[var(--color-primary)]/0 transition group-hover:bg-[var(--color-primary)]/28" />
-      <div
-        className={`absolute inset-y-0 right-0 w-1 ${priorityPresentation.railClassName}`}
-      />
-
-      <div className="flex items-start gap-4">
+    <article
+      className={`rounded-[12px] border px-3.5 py-3.5 ${
+        isZulipJoined
+          ? "border-emerald-300/28 bg-[linear-gradient(145deg,rgba(16,185,129,0.18),rgba(11,17,32,0.96))] shadow-[0_0_0_1px_rgba(52,211,153,0.12)]"
+          : isZulipAction
+            ? "border-cyan-400/20 bg-[linear-gradient(145deg,rgba(34,211,238,0.08),rgba(11,17,32,0.94))]"
+            : "border-[var(--color-border)] bg-[var(--color-surface-bright)]"
+      }`}
+    >
+      <div className="flex items-start gap-3">
         <div
           className={`mt-0.5 shrink-0 ${
             isSuccess
@@ -920,126 +1151,142 @@ function PreviewTaskCard({
         </div>
 
         <div className="min-w-0 flex-1">
-          <h3 className="text-base font-semibold text-white">{item.title}</h3>
-          <p className="mt-2 text-[11px] font-mono uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]">
-            {item.source} · {priorityPresentation.summaryLabel}
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-base font-semibold text-white">{item.title}</h3>
+            {isZulipAction ? (
+              <span
+                className={`rounded-full border px-2.5 py-1 font-mono text-[0.6rem] uppercase tracking-[0.16em] ${
+                  isZulipJoined
+                    ? "border-emerald-300/28 bg-emerald-400/16 text-emerald-50"
+                    : "border-cyan-400/22 bg-cyan-400/12 text-cyan-50"
+                }`}
+              >
+                {isZulipJoined ? "Joined channel" : "Zulip"}
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-1.5 font-mono text-[0.68rem] tracking-[0.08em] text-[#89a9ff]">
+            {getTaskMetaLine(item)}
           </p>
-          {executionState?.message ? (
-            <p className="mt-3 text-sm text-[var(--color-on-surface-variant)]">
-              {executionState.message}
-            </p>
-          ) : null}
         </div>
-      </div>
-
-      <div className="mt-5 flex items-center justify-between gap-3">
-        <span
-          className={`rounded-full border px-3 py-1 text-[10px] font-mono uppercase tracking-[0.22em] ${priorityPresentation.badgeClassName}`}
-        >
-          {priorityPresentation.badgeLabel}
-        </span>
-        <span className="text-[11px] text-[var(--color-on-surface-variant)]">
-          {isSuccess
-            ? "Resolved"
-            : needsAttention
-              ? "Needs review"
-              : "Queued in plan"}
-        </span>
       </div>
     </article>
   );
 }
 
-function OverviewPanels({
-  feedEntries,
-  nodes,
-  pendingActionCount,
-  queuePreview,
-  taskName,
-}: OverviewPanelsProps) {
+function ZulipMissionStatus({
+  actionItems,
+  executionStates,
+  zulipStatus,
+}: {
+  actionItems: ActionItem[];
+  executionStates: Record<string, ActionExecutionState>;
+  zulipStatus: ZulipStatus;
+}) {
+  const joinedZulipItems = getSuccessfulZulipItems(actionItems, executionStates);
+  const pendingZulipItems = getPendingZulipItems(actionItems, executionStates);
+  const joinedChannels = Array.from(
+    new Set([
+      ...zulipStatus.subscribed,
+      ...joinedZulipItems.map((item) => item.executionName),
+    ]),
+  );
+  const latestJoinedChannel =
+    joinedChannels.length > 0 ? joinedChannels[joinedChannels.length - 1] : null;
+  const visibleJoinedChannels = [...joinedChannels].reverse().slice(0, 6);
+  const hasJoinedChannels = joinedChannels.length > 0;
+
+  if (!hasJoinedChannels && pendingZulipItems.length === 0) {
+    return null;
+  }
+
   return (
-    <section className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
-      <div className="glass-panel rounded-[28px] p-6">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <CheckCircle2 className="h-5 w-5 text-[var(--color-primary)]" />
-            <h2 className="font-display text-lg font-semibold text-white">
-              Execution Feed
-            </h2>
+    <section
+      className={`rounded-[20px] border p-5 md:p-6 ${
+        hasJoinedChannels
+          ? "border-emerald-300/28 bg-[linear-gradient(140deg,rgba(16,185,129,0.18),rgba(6,78,59,0.12),rgba(11,17,32,0.98))] shadow-[0_0_0_1px_rgba(52,211,153,0.1)]"
+          : "border-cyan-400/24 bg-[linear-gradient(140deg,rgba(34,211,238,0.12),rgba(11,17,32,0.98))]"
+      }`}
+    >
+      <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+        <div className="max-w-3xl">
+          <div
+            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 font-mono text-[0.66rem] uppercase tracking-[0.2em] ${
+              hasJoinedChannels
+                ? "border-emerald-300/25 bg-emerald-400/14 text-emerald-50"
+                : "border-cyan-400/20 bg-cyan-400/10 text-cyan-50"
+            }`}
+          >
+            {hasJoinedChannels ? (
+              <CheckCircle2 className="h-4 w-4" strokeWidth={1.9} />
+            ) : (
+              <RefreshCw className="h-4 w-4" strokeWidth={1.9} />
+            )}
+            Zulip handoff
           </div>
-          <div className="rounded-full border border-white/8 bg-white/4 px-3 py-1 text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]">
-            {pendingActionCount} open
-          </div>
+
+          <h2 className="mt-4 font-display text-[1.9rem] font-semibold text-white md:text-[2.2rem]">
+            {hasJoinedChannels
+              ? joinedChannels.length === 1
+                ? "Zulip channel joined"
+                : `${joinedChannels.length} Zulip channels joined`
+              : "Zulip channels are queued"}
+          </h2>
+
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--color-on-surface)]/88">
+            {hasJoinedChannels && latestJoinedChannel
+              ? `You are now connected to ${latestJoinedChannel}.`
+              : pendingZulipItems.length === 1
+                ? "A Zulip channel is waiting to be joined. Once it lands, it will stay highlighted here."
+                : `${pendingZulipItems.length} Zulip channels are waiting to be joined. Once they land, they will stay highlighted here.`}
+          </p>
         </div>
-        <p className="mt-4 text-sm leading-7 text-[var(--color-on-surface-variant)]">
-          Confirmed actions, joined channels, and live status handoffs settle here
-          first.
-        </p>
-        <div className="mt-5 space-y-3">
-          {feedEntries.map((entry) => (
-            <div
-              key={entry}
-              className="flex items-center gap-3 rounded-2xl border border-white/6 bg-white/[0.03] px-4 py-3 text-sm text-white"
-            >
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_16px_rgba(52,211,153,0.42)]" />
-              <span className="min-w-0 truncate">{entry}</span>
+
+        <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[300px]">
+          <div className="rounded-[14px] border border-white/10 bg-[rgba(255,255,255,0.05)] p-4">
+            <div className="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-[var(--color-on-surface-variant)]">
+              Joined now
             </div>
-          ))}
+            <div className="mt-2 text-[1.7rem] font-semibold text-white">
+              {joinedChannels.length}
+            </div>
+          </div>
+
+          <div className="rounded-[14px] border border-white/10 bg-[rgba(255,255,255,0.05)] p-4">
+            <div className="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-[var(--color-on-surface-variant)]">
+              Still queued
+            </div>
+            <div className="mt-2 text-[1.7rem] font-semibold text-white">
+              {pendingZulipItems.length}
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="glass-panel rounded-[28px] p-6">
-        <div className="flex items-center gap-3">
-          <BookOpen className="h-5 w-5 text-[var(--color-primary)]" />
-          <h2 className="font-display text-lg font-semibold text-white">
-            Task Focus
-          </h2>
-        </div>
-        <p className="mt-4 text-sm leading-7 text-[var(--color-on-surface-variant)]">
-          {taskName}
-        </p>
-        <div className="mt-5 space-y-3">
-          {(queuePreview.length > 0 ? queuePreview : ["Waiting for plan items"]).map(
-            (entry) => (
+      {visibleJoinedChannels.length > 0 ? (
+        <div className="mt-5 border-t border-white/10 pt-4">
+          <div className="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-[var(--color-on-surface-variant)]">
+            Joined channels
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {visibleJoinedChannels.map((channelName) => (
               <div
-                key={entry}
-                className="rounded-2xl border border-white/6 bg-white/[0.03] px-4 py-3 text-sm text-white"
+                key={channelName}
+                className="inline-flex items-center gap-2 rounded-full border border-emerald-300/22 bg-emerald-400/14 px-3 py-1.5 text-sm font-medium text-emerald-50"
               >
-                {entry}
+                <CheckCircle2 className="h-4 w-4 shrink-0" strokeWidth={1.9} />
+                <span>{channelName}</span>
               </div>
-            ),
-          )}
-        </div>
-      </div>
+            ))}
 
-      <div className="glass-panel rounded-[28px] p-6">
-        <div className="flex items-center gap-3">
-          <Network className="h-5 w-5 text-[var(--color-primary)]" />
-          <h2 className="font-display text-lg font-semibold text-white">
-            Institutional Nodes
-          </h2>
+            {joinedChannels.length > visibleJoinedChannels.length ? (
+              <div className="inline-flex items-center rounded-full border border-white/10 bg-white/6 px-3 py-1.5 text-sm text-[var(--color-on-surface-variant)]">
+                +{joinedChannels.length - visibleJoinedChannels.length} more
+              </div>
+            ) : null}
+          </div>
         </div>
-        <p className="mt-4 text-sm leading-7 text-[var(--color-on-surface-variant)]">
-          Platform health stays visible even when the sidebar collapses on smaller
-          screens.
-        </p>
-        <div className="mt-5 space-y-3">
-          {nodes.map((node) => (
-            <div
-              key={node.name}
-              className="flex items-center gap-3 rounded-2xl border border-white/6 bg-white/[0.03] px-4 py-3"
-            >
-              <span
-                className={`h-2.5 w-2.5 rounded-full ${getToneClasses(node.tone)}`}
-              />
-              <span className="flex-1 text-sm text-white">{node.name}</span>
-              <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-[var(--color-on-surface-variant)]">
-                {node.badge}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
+      ) : null}
     </section>
   );
 }
@@ -1053,98 +1300,120 @@ function ActionCard({
   item: ActionItem;
   onExecute: (item: ActionItem) => Promise<void>;
 }) {
+  const isZulipAction = item.actionType === "zulip";
   const isWorking = executionState?.status === "working";
   const isSuccess = executionState?.status === "success";
+  const isZulipJoined = isZulipAction && isSuccess;
   const isManualActionRequired =
     executionState?.status === "manual_action_required";
   const hasError = executionState?.status === "error";
-  const openLinkUrl = executionState?.navigationUrl ?? item.searchUrl;
+  const openLinkUrl = resolveNavigationUrl(
+    item.searchUrl,
+    executionState?.navigationUrl,
+  );
   const priorityPresentation = getPriorityPresentation(item.priority);
 
   return (
-    <article className="group relative overflow-hidden rounded-[24px] border border-white/8 bg-[rgba(15,17,26,0.92)] p-5 transition hover:border-[var(--color-primary)]/20">
-      <div className="absolute inset-x-0 top-0 h-px bg-[var(--color-primary)]/0 transition group-hover:bg-[var(--color-primary)]/28" />
-      <div
-        className={`absolute inset-y-0 right-0 w-1 ${priorityPresentation.railClassName}`}
-      />
-
-      <div className="flex items-start gap-4">
-        <div
-          className={`mt-0.5 shrink-0 ${
-            isSuccess
-              ? "text-emerald-300"
-              : isManualActionRequired || hasError
-                ? "text-rose-200"
-                : isWorking
-                  ? "text-[var(--color-primary)]"
-                  : "text-[var(--color-on-surface-variant)]"
-          }`}
-        >
-          {isWorking ? (
-            <RefreshCw className="h-5 w-5 animate-spin" strokeWidth={1.9} />
-          ) : isSuccess ? (
-            <CheckCircle2 className="h-5 w-5" strokeWidth={1.9} />
-          ) : isManualActionRequired || hasError ? (
-            <CircleAlert className="h-5 w-5" strokeWidth={1.9} />
-          ) : (
-            <Circle className="h-5 w-5" strokeWidth={1.9} />
-          )}
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-3">
-            <h3 className="text-base font-semibold text-white">{item.title}</h3>
-            <span
-              className={`rounded-full border px-3 py-1 text-[10px] font-mono uppercase tracking-[0.22em] ${priorityPresentation.badgeClassName}`}
-            >
-              {priorityPresentation.badgeLabel}
-            </span>
+    <article
+      className={`rounded-[14px] border p-3.5 ${
+        isZulipJoined
+          ? "border-emerald-300/30 bg-[linear-gradient(145deg,rgba(16,185,129,0.18),rgba(11,17,32,0.98))] shadow-[0_0_0_1px_rgba(52,211,153,0.1)]"
+          : isZulipAction
+            ? "border-cyan-400/20 bg-[linear-gradient(145deg,rgba(34,211,238,0.08),rgba(11,17,32,0.94))]"
+            : "border-[var(--color-border)] bg-[var(--color-surface-bright)]"
+      }`}
+    >
+      <div className="flex flex-col gap-3.5 xl:flex-row xl:items-start xl:justify-between">
+        <div className="flex min-w-0 items-start gap-3.5">
+          <div
+            className={`mt-1 shrink-0 ${
+              isSuccess
+                ? "text-emerald-300"
+                : isManualActionRequired || hasError
+                  ? "text-rose-200"
+                  : isWorking
+                    ? "text-[var(--color-primary)]"
+                    : "text-[var(--color-on-surface-variant)]"
+            }`}
+          >
+            {isWorking ? (
+              <RefreshCw className="h-5 w-5 animate-spin" strokeWidth={1.9} />
+            ) : isSuccess ? (
+              <CheckCircle2 className="h-5 w-5" strokeWidth={1.9} />
+            ) : isManualActionRequired || hasError ? (
+              <CircleAlert className="h-5 w-5" strokeWidth={1.9} />
+            ) : (
+              <Circle className="h-5 w-5" strokeWidth={1.9} />
+            )}
           </div>
 
-          <p className="mt-2 text-[11px] font-mono uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]">
-            {item.source} · {priorityPresentation.summaryLabel}
-          </p>
-
-          {executionState?.message ? (
-            <div
-              className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${
-                isSuccess
-                  ? "border-emerald-400/18 bg-emerald-500/10 text-emerald-50"
-                  : isManualActionRequired || hasError
-                    ? "border-rose-400/18 bg-rose-500/10 text-rose-50"
-                    : "border-[var(--color-primary)]/18 bg-[var(--color-primary)]/10 text-cyan-50"
-              }`}
-            >
-              {executionState.message}
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h3 className="text-[0.98rem] font-semibold text-white">{item.title}</h3>
+              {isZulipAction ? (
+                <span
+                  className={`rounded-[10px] border px-2.5 py-1 font-mono text-[0.64rem] uppercase tracking-[0.18em] ${
+                    isZulipJoined
+                      ? "border-emerald-300/25 bg-emerald-400/14 text-emerald-50"
+                      : "border-cyan-400/20 bg-cyan-400/10 text-cyan-50"
+                  }`}
+                >
+                  {isZulipJoined ? "Joined channel" : "Main feature"}
+                </span>
+              ) : null}
+              <span
+                className={`rounded-[10px] border px-2.5 py-1 font-mono text-[0.64rem] uppercase tracking-[0.18em] ${priorityPresentation.badgeClassName}`}
+              >
+                {priorityPresentation.badgeLabel}
+              </span>
             </div>
-          ) : null}
-        </div>
-      </div>
 
-      <div className="mt-5 flex flex-wrap gap-3">
+            <p className="mt-1.5 font-mono text-[0.68rem] tracking-[0.08em] text-[#89a9ff]">
+              {getTaskMetaLine(item)}
+            </p>
+
+            {executionState?.message ? (
+              <div
+                className={`mt-3 rounded-[12px] border px-3.5 py-2.5 text-sm ${
+                  isZulipJoined
+                    ? "border-emerald-300/24 bg-emerald-400/16 text-emerald-50"
+                    : isSuccess
+                      ? "border-emerald-400/18 bg-emerald-500/10 text-emerald-50"
+                      : isManualActionRequired || hasError
+                        ? "border-rose-400/18 bg-rose-500/10 text-rose-50"
+                        : "border-[var(--color-primary)]/18 bg-[var(--color-primary)]/10 text-cyan-50"
+                }`}
+              >
+                {executionState.message}
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2.5 xl:justify-end">
         {!isSuccess ? (
           <button
             type="button"
             disabled={isWorking}
             onClick={() => void onExecute(item)}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-[#02141a] transition hover:-translate-y-0.5 hover:shadow-[0_0_26px_rgba(0,209,255,0.35)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+            className="inline-flex items-center justify-center gap-2 rounded-[12px] border border-[var(--color-primary)] bg-[var(--color-primary)] px-3.5 py-2.5 text-sm font-semibold text-[#04101a] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isWorking ? (
               <>
                 <RefreshCw className="h-4 w-4 animate-spin" />
-                Agent working
+                {isZulipAction ? "Joining" : "Working"}
               </>
             ) : hasError ? (
-              "Retry action"
+              isZulipAction ? "Retry join" : "Retry"
             ) : isManualActionRequired ? (
-              "Retry handoff"
+              isZulipAction ? "Retry join" : "Retry handoff"
             ) : (
-              "Execute action"
+              isZulipAction ? "Join channel" : "Execute action"
             )}
           </button>
         ) : (
-          <div className="inline-flex items-center rounded-full border border-emerald-400/20 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-50">
-            Completed
+          <div className="inline-flex items-center rounded-[12px] border border-emerald-400/18 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-50">
+            {isZulipAction ? "Joined channel" : "Completed"}
           </div>
         )}
 
@@ -1153,12 +1422,13 @@ function ActionCard({
             href={openLinkUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-[var(--color-on-surface-variant)] transition hover:border-white/20 hover:bg-white/4 hover:text-white"
+            className="inline-flex items-center justify-center gap-2 rounded-[12px] border border-[var(--color-border)] px-3.5 py-2.5 text-sm font-semibold text-[var(--color-on-surface-variant)] transition hover:border-white/25 hover:text-white"
           >
             {isManualActionRequired ? "Open manually" : "Open link"}
             <ArrowUpRight className="h-4 w-4" />
           </a>
         ) : null}
+      </div>
       </div>
     </article>
   );
@@ -1178,22 +1448,22 @@ function MatrixColumn({
   title: string;
 }) {
   return (
-    <section className="glass-panel rounded-[28px] p-6 md:p-8">
-      <div className="flex items-center justify-between gap-3 border-b border-white/6 pb-5">
+    <section className="rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface-container)] p-4 md:p-5">
+      <div className="flex items-center justify-between gap-3 border-b border-[var(--color-border)] pb-3.5">
         <div>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--color-primary)]">
+          <div className="font-mono text-[0.68rem] uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]">
             {eyebrow}
           </div>
-          <h3 className="mt-2 font-display text-2xl font-semibold text-white">
+          <h3 className="mt-2 font-display text-[1.45rem] font-semibold text-white">
             {title}
           </h3>
         </div>
-        <div className="rounded-full border border-white/8 bg-white/4 px-3 py-1 text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]">
-          {items.length} visible
+        <div className="rounded-[10px] bg-[var(--color-surface-bright)] px-3 py-2 font-mono text-[0.68rem] uppercase tracking-[0.18em] text-[var(--color-on-surface-variant)]">
+          {items.length} items
         </div>
       </div>
 
-      <div className="scrollbar-custom mt-6 space-y-4 lg:max-h-[760px] lg:overflow-y-auto lg:pr-2">
+      <div className="scrollbar-custom mt-4 space-y-3 lg:max-h-[720px] lg:overflow-y-auto lg:pr-1">
         {items.length > 0 ? (
           items.map((item) => (
             <ActionCard
@@ -1206,7 +1476,7 @@ function MatrixColumn({
         ) : (
           <EmptyState
             title="No actions waiting here"
-            body="Adjust the search filter or upload a fresh document to repopulate this lane."
+            body="Upload a fresh document to repopulate this lane."
           />
         )}
       </div>
@@ -1215,19 +1485,16 @@ function MatrixColumn({
 }
 
 function LandingView({
-  filteredActionCount,
+  isUploading,
   onOpenStrategy,
   onUploadComplete,
   onUploadStateChange,
-  overviewProps,
-  pendingActionCount,
+  pendingPreviewCount,
   previewItems,
   executionStates,
-  isUploading,
   statusMessage,
 }: {
   executionStates: Record<string, ActionExecutionState>;
-  filteredActionCount: number;
   isUploading: boolean;
   onOpenStrategy: () => void;
   onUploadComplete: (
@@ -1235,13 +1502,12 @@ function LandingView({
     context: UploadContext,
   ) => Promise<void> | void;
   onUploadStateChange: (uploading: boolean) => void;
-  overviewProps: OverviewPanelsProps;
-  pendingActionCount: number;
+  pendingPreviewCount: number;
   previewItems: ActionItem[];
   statusMessage: string;
 }) {
   return (
-    <div className="space-y-10">
+    <div className="space-y-5">
       <DocumentIngestion
         isUploading={isUploading}
         statusMessage={statusMessage}
@@ -1249,38 +1515,28 @@ function LandingView({
         onUploadStateChange={onUploadStateChange}
       />
 
-      <section className="glass-panel rounded-[28px] p-6 md:p-8">
-        <div className="flex flex-col gap-4 border-b border-white/6 pb-5 md:flex-row md:items-end md:justify-between">
-          <div>
-            <div className="flex items-center gap-3">
-              <CheckCircle2 className="h-5 w-5 text-[var(--color-primary)]" />
-              <h2 className="font-display text-2xl font-semibold text-white">
-                Todo Preview
-              </h2>
-            </div>
-            <p className="mt-3 text-sm leading-7 text-[var(--color-on-surface-variant)]">
-              {filteredActionCount > 0
-                ? `${filteredActionCount} actions are visible in the current plan. Move into the strategy matrix when you want to execute them.`
-                : "No visible actions match the current filter yet."}
-            </p>
+      <section className="rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface-container)] p-4 md:p-5">
+        <div className="flex flex-col gap-3.5 border-b border-[var(--color-border)] pb-3.5 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <ListTodo className="h-5 w-5 text-[var(--color-primary)]" strokeWidth={1.8} />
+            <h2 className="font-display text-[1.85rem] font-semibold text-white">TODO</h2>
           </div>
-
           <div className="flex flex-wrap items-center gap-3">
-            <div className="rounded-full border border-white/8 bg-white/4 px-3 py-1 text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]">
-              {pendingActionCount} pending
-            </div>
             <button
               type="button"
               onClick={onOpenStrategy}
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--color-primary)]/20 px-4 py-2 text-sm font-semibold text-[var(--color-primary)] transition hover:bg-[var(--color-primary)]/8"
+              className="inline-flex items-center justify-center gap-2 rounded-[12px] border border-[var(--color-border)] px-3.5 py-2.5 text-sm font-semibold text-[var(--color-on-surface-variant)] transition hover:border-[var(--color-primary)]/35 hover:text-white"
             >
               Open strategy matrix
               <ChevronRight className="h-4 w-4" />
             </button>
+            <div className="rounded-[10px] bg-[var(--color-surface-bright)] px-3 py-1.5 font-mono text-[0.68rem] uppercase tracking-[0.18em] text-[var(--color-on-surface-variant)]">
+              {pendingPreviewCount} pending
+            </div>
           </div>
         </div>
 
-        <div className="mt-6 grid gap-4 xl:grid-cols-2">
+        <div className="mt-4 grid gap-3 xl:grid-cols-2">
           {previewItems.length > 0 ? (
             previewItems.map((item) => (
               <PreviewTaskCard
@@ -1293,164 +1549,73 @@ function LandingView({
             <div className="xl:col-span-2">
               <EmptyState
                 title="Nothing is queued yet"
-                body="Upload a document or clear the current filter to surface the live plan items."
+                body="Upload a document to surface the live plan items."
               />
             </div>
           )}
         </div>
       </section>
-
-      <OverviewPanels {...overviewProps} />
     </div>
   );
 }
 
 function DashboardView({
+  actionItems,
   doNowItems,
   executionStates,
-  filteredActionCount,
+  actionCount,
   onExecute,
-  overviewProps,
   scheduledItems,
-  searchQuery,
+  zulipStatus,
 }: {
+  actionItems: ActionItem[];
   doNowItems: ActionItem[];
   executionStates: Record<string, ActionExecutionState>;
-  filteredActionCount: number;
+  actionCount: number;
   onExecute: (item: ActionItem) => Promise<void>;
-  overviewProps: OverviewPanelsProps;
   scheduledItems: ActionItem[];
-  searchQuery: string;
+  zulipStatus: ZulipStatus;
 }) {
   return (
-    <div className="space-y-10">
-      <section className="glass-panel rounded-[28px] p-6 md:p-8">
-        <div className="border-b border-white/6 pb-6">
-          <div className="flex items-center gap-3">
-            <LayoutDashboard className="h-5 w-5 text-[var(--color-primary)]" />
-            <h2 className="font-display text-2xl font-semibold text-white">
-              Strategy Matrix
-            </h2>
+    <div className="space-y-5">
+      <ZulipMissionStatus
+        actionItems={actionItems}
+        executionStates={executionStates}
+        zulipStatus={zulipStatus}
+      />
+
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <div className="font-mono text-[0.68rem] uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]">
+            execution_matrix
           </div>
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--color-on-surface-variant)]">
-            {searchQuery.trim().length > 0
-              ? `${filteredActionCount} actions match the current filter. Urgent and deferred lanes stay separate so the next move is still obvious.`
-              : "Urgent and deferred lanes stay separate so the next move is obvious at a glance while the backend logic keeps routing through the same action endpoints."}
+          <p className="mt-2 text-sm leading-7 text-[var(--color-on-surface-variant)]">
+            {actionCount > 0
+              ? `${actionCount} actions are split into immediate and scheduled lanes.`
+              : "Upload a document to create the first execution lanes."}
           </p>
         </div>
 
-        <div className="mt-6 grid gap-6 xl:grid-cols-2">
-          <MatrixColumn
-            title="Urgent & Important"
-            eyebrow="Do now"
-            items={doNowItems}
-            executionStates={executionStates}
-            onExecute={onExecute}
-          />
-          <MatrixColumn
-            title="Queue Next"
-            eyebrow="Schedule"
-            items={scheduledItems}
-            executionStates={executionStates}
-            onExecute={onExecute}
-          />
+        <div className="rounded-[10px] bg-[var(--color-surface-bright)] px-3 py-2 font-mono text-[0.72rem] uppercase tracking-[0.18em] text-[var(--color-on-surface-variant)]">
+          {actionCount} open
         </div>
-      </section>
+      </div>
 
-      <OverviewPanels {...overviewProps} />
-    </div>
-  );
-}
-
-function PlanReadyModal({
-  actionCount,
-  courseLabel,
-  fileName,
-  onConfirm,
-  onDismiss,
-  scheduledCount,
-  taskName,
-  urgentCount,
-}: {
-  actionCount: number;
-  courseLabel: string;
-  fileName: string | null;
-  onConfirm: () => void;
-  onDismiss: () => void;
-  scheduledCount: number;
-  taskName: string;
-  urgentCount: number;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-6 backdrop-blur-md">
-      <div className="glass-panel w-full max-w-xl rounded-[32px] p-8 shadow-[0_36px_120px_rgba(0,0,0,0.55)]">
-        <div className="flex items-center gap-3 text-[var(--color-primary)]">
-          <Sparkles className="h-5 w-5" />
-          <div className="font-mono text-xs font-semibold uppercase tracking-[0.28em]">
-            Strategic Plan Ready
-          </div>
-        </div>
-
-        <h2 className="mt-5 font-display text-3xl font-semibold text-white">
-          The new workspace plan is ready to initiate.
-        </h2>
-
-        <p className="mt-4 text-sm leading-7 text-[var(--color-on-surface-variant)]">
-          {fileName ? `${fileName} ` : "The latest document "}
-          was parsed into a fresh task graph and routed into the command center.
-        </p>
-
-        <div className="mt-8 grid gap-4 sm:grid-cols-3">
-          <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
-            <div className="text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]">
-              Course Signal
-            </div>
-            <div className="mt-2 text-xl font-semibold text-white">
-              {courseLabel}
-            </div>
-          </div>
-          <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
-            <div className="text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]">
-              Open Actions
-            </div>
-            <div className="mt-2 text-xl font-semibold text-white">
-              {actionCount}
-            </div>
-          </div>
-          <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
-            <div className="text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]">
-              Urgent Split
-            </div>
-            <div className="mt-2 text-xl font-semibold text-white">
-              {urgentCount}/{scheduledCount}
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-8 rounded-[24px] border border-[var(--color-primary)]/16 bg-[var(--color-primary)]/8 p-5">
-          <div className="text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--color-primary)]">
-            Active Brief
-          </div>
-          <p className="mt-3 text-sm leading-7 text-cyan-50">{taskName}</p>
-        </div>
-
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] px-5 py-3 text-sm font-semibold text-[#02141a] transition hover:-translate-y-0.5 hover:shadow-[0_0_28px_rgba(0,209,255,0.35)]"
-          >
-            Initiate plan
-            <ChevronRight className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={onDismiss}
-            className="inline-flex flex-1 items-center justify-center rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-[var(--color-on-surface-variant)] transition hover:border-white/20 hover:bg-white/4 hover:text-white"
-          >
-            Add more files
-          </button>
-        </div>
+      <div className="grid gap-4 xl:grid-cols-2">
+        <MatrixColumn
+          title="Urgent & Important"
+          eyebrow="Do now"
+          items={doNowItems}
+          executionStates={executionStates}
+          onExecute={onExecute}
+        />
+        <MatrixColumn
+          title="Queue Next"
+          eyebrow="Schedule"
+          items={scheduledItems}
+          executionStates={executionStates}
+          onExecute={onExecute}
+        />
       </div>
     </div>
   );
@@ -1471,14 +1636,8 @@ export function CampusCopilotDashboard({
   const [currentView, setCurrentView] = useState<"landing" | "dashboard">(
     "landing",
   );
-  const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [statusIndex, setStatusIndex] = useState(0);
-  const [searchQuery, setSearchQuery] = useState("");
-  const deferredSearchQuery = useDeferredValue(searchQuery);
-  const [lastUploadFileName, setLastUploadFileName] = useState<string | null>(
-    null,
-  );
 
   useEffect(() => {
     if (!isUploading) {
@@ -1495,73 +1654,19 @@ export function CampusCopilotDashboard({
   }, [isUploading]);
 
   const actionItems = collectActionItems(payload.execution_results);
-  const visibleActionItems =
-    deferredSearchQuery.trim().length === 0
-      ? actionItems
-      : actionItems.filter((item) => matchesSearch(item, deferredSearchQuery));
-  const doNowItems = visibleActionItems.filter((item) => item.priority === "do_now");
-  const scheduledItems = visibleActionItems.filter(
+  const doNowItems = actionItems.filter((item) => item.priority === "do_now");
+  const scheduledItems = actionItems.filter(
     (item) => item.priority === "schedule",
   );
-  const previewItems = visibleActionItems.slice(0, 4);
+  const previewItems = buildPreviewItems(actionItems, executionStates);
   const pendingActionCount = actionItems.filter(
     (item) => executionStates[getActionKey(item)]?.status !== "success",
   ).length;
-  const completedActionCount = actionItems.length - pendingActionCount;
+  const pendingPreviewCount = previewItems.filter(
+    (item) => executionStates[getActionKey(item)]?.status !== "success",
+  ).length;
   const sidebarCourses = buildSidebarCourses(actionItems);
   const sidebarNodes = buildSidebarNodes(actionItems, executionStates, zulipStatus);
-  const queuePreview = uniqueTitles(actionItems).slice(0, 4);
-  const completedFeedEntries = actionItems
-    .filter((item) => executionStates[getActionKey(item)]?.status === "success")
-    .map((item) => `${item.source}: ${item.title}`);
-  const feedEntries =
-    completedFeedEntries.length > 0
-      ? completedFeedEntries.slice(0, 4)
-      : zulipStatus.subscribed.length > 0
-        ? zulipStatus.subscribed.slice(0, 4)
-        : ["Waiting for the first confirmed handoff"];
-  const urgentCount = actionItems.filter((item) => item.priority === "do_now").length;
-  const scheduledCount = actionItems.filter(
-    (item) => item.priority === "schedule",
-  ).length;
-  const stats: StatCard[] = [
-    {
-      label: "Open actions",
-      value: pendingActionCount,
-      delta: `${urgentCount} urgent now`,
-      deltaClassName: urgentCount > 0 ? "delta-dn" : "delta-flat",
-    },
-    {
-      label: "Scheduled",
-      value: scheduledCount,
-      delta: "calendar-ready queue",
-      deltaClassName: "delta-flat",
-    },
-    {
-      label: "Zulip channels",
-      value: zulipStatus.subscribed.length,
-      delta:
-        zulipStatus.status === "complete" ? "stream sync complete" : "waiting for sync",
-      deltaClassName:
-        zulipStatus.status === "complete" ? "delta-up" : "delta-flat",
-    },
-    {
-      label: "Completed",
-      value: completedActionCount,
-      delta:
-        completedActionCount > 0
-          ? "autonomous follow-through"
-          : "no actions resolved yet",
-      deltaClassName: completedActionCount > 0 ? "delta-up" : "delta-flat",
-    },
-  ];
-  const overviewProps: OverviewPanelsProps = {
-    feedEntries,
-    nodes: sidebarNodes,
-    pendingActionCount,
-    queuePreview,
-    taskName: payload.taskName,
-  };
 
   function handleUploadStateChange(uploading: boolean) {
     setIsUploading(uploading);
@@ -1571,10 +1676,7 @@ export function CampusCopilotDashboard({
     }
   }
 
-  async function handleUploadComplete(
-    response: unknown,
-    context: UploadContext,
-  ) {
+  async function handleUploadComplete(response: unknown) {
     const nextPayload = extractPayloadFromUnknown(response);
 
     if (!nextPayload) {
@@ -1587,10 +1689,7 @@ export function CampusCopilotDashboard({
       setPayload(nextPayload);
       setExecutionStates({});
       setZulipStatus(getInitialZulipStatus(nextPayload.execution_results));
-      setCurrentView("landing");
-      setIsPlanModalOpen(true);
-      setLastUploadFileName(context.fileName);
-      setSearchQuery("");
+      setCurrentView("dashboard");
     });
   }
 
@@ -1603,6 +1702,7 @@ export function CampusCopilotDashboard({
 
   async function onExecute(item: ActionItem) {
     const actionKey = getActionKey(item);
+    const pendingNavigationWindow = openPendingNavigationWindow(item.actionType);
 
     setExecutionStates((current) => ({
       ...current,
@@ -1621,6 +1721,7 @@ export function CampusCopilotDashboard({
         body: JSON.stringify({
           type: item.actionType,
           name: item.executionName,
+          searchUrl: item.searchUrl,
         }),
       });
 
@@ -1629,6 +1730,8 @@ export function CampusCopilotDashboard({
         | null;
 
       if (!response.ok || !responseJson) {
+        closePendingNavigationWindow(pendingNavigationWindow);
+
         setExecutionStates((current) => ({
           ...current,
           [actionKey]: {
@@ -1647,6 +1750,8 @@ export function CampusCopilotDashboard({
       }
 
       if (responseJson.status !== "success") {
+        closePendingNavigationWindow(pendingNavigationWindow);
+
         setExecutionStates((current) => ({
           ...current,
           [actionKey]: {
@@ -1660,14 +1765,23 @@ export function CampusCopilotDashboard({
         return;
       }
 
+      const navigationUrl = resolveNavigationUrl(
+        item.searchUrl,
+        responseJson.navigationUrl,
+      );
+
       setExecutionStates((current) => ({
         ...current,
         [actionKey]: {
           status: "success",
           message: responseJson.message,
-          navigationUrl: responseJson.navigationUrl ?? item.searchUrl,
+          navigationUrl,
         },
       }));
+
+      window.requestAnimationFrame(() => {
+        navigatePendingWindow(pendingNavigationWindow, navigationUrl);
+      });
 
       if (item.actionType === "zulip") {
         setZulipStatus((current) => ({
@@ -1678,6 +1792,8 @@ export function CampusCopilotDashboard({
         }));
       }
     } catch {
+      closePendingNavigationWindow(pendingNavigationWindow);
+
       setExecutionStates((current) => ({
         ...current,
         [actionKey]: {
@@ -1694,7 +1810,7 @@ export function CampusCopilotDashboard({
 
   return (
     <div className="min-h-screen bg-[var(--color-surface)] text-[var(--color-on-surface)]">
-      <div className="lg:grid lg:min-h-screen lg:grid-cols-[280px_minmax(0,1fr)]">
+      <div className="lg:grid lg:min-h-screen lg:grid-cols-[252px_minmax(0,1fr)]">
         <Sidebar
           courses={sidebarCourses}
           isUploading={isUploading}
@@ -1702,178 +1818,82 @@ export function CampusCopilotDashboard({
           pendingActionCount={pendingActionCount}
         />
 
-        <main className="relative min-w-0">
-          <div
-            className={`min-h-screen transition-all duration-700 ${
-              isPlanModalOpen ? "scale-[0.985] blur-[8px] opacity-45" : ""
-            }`}
-          >
-            <header className="border-b border-white/6 px-6 pb-6 pt-6 md:px-10 md:pb-8 md:pt-10">
-              <div className="mb-6 flex items-center justify-between gap-4 lg:hidden">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--color-primary)] text-[#03151b] ${
-                      isUploading ? "animate-breathe glow-cyan-strong" : "glow-cyan"
-                    }`}
-                  >
-                    {isUploading ? (
-                      <ScanEye className="h-5 w-5" strokeWidth={2} />
-                    ) : (
-                      <Eye className="h-5 w-5" strokeWidth={2} />
-                    )}
-                  </div>
-                  <div>
-                    <div className="font-display text-lg font-semibold tracking-[0.2em] text-white">
-                      UNIFEYE
-                    </div>
-                    <div className="text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]">
-                      {pendingActionCount} open actions
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-full border border-white/8 bg-white/4 px-3 py-1 text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]">
-                  Live
+        <main className="relative min-h-screen min-w-0 bg-[#0b1120] lg:min-h-0">
+          <div className="min-h-full transition-all duration-500">
+            <header className="border-b border-[var(--color-border)] px-5 py-5 md:px-8 md:py-6">
+              <div className="mb-5 flex items-center justify-between gap-4 lg:hidden">
+                <UnifeyeLogo
+                  className={isUploading ? "animate-breathe gap-3" : "gap-3"}
+                  subtitle={`${pendingActionCount} open actions`}
+                />
+                <div className="rounded-[10px] bg-[var(--color-surface-bright)] px-3 py-2 font-mono text-[0.68rem] uppercase tracking-[0.18em] text-[var(--color-on-surface-variant)]">
+                  {currentView === "dashboard" ? "matrix" : "dashboard"}
                 </div>
               </div>
 
-              <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
-                <div className="max-w-3xl">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--color-primary)]">
-                    Autonomous academic orchestration
-                  </div>
-                  <h1 className="mt-4 font-display text-4xl font-semibold text-white md:text-5xl">
-                    {currentView === "dashboard"
-                      ? "Strategy Command"
-                      : "Command Center"}
+              <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                <div>
+                  <h1 className="font-display text-[2.65rem] font-semibold text-white md:text-[3rem]">
+                    {currentView === "dashboard" ? "Strategy Matrix" : "Dashboard"}
                   </h1>
-                  <p className="mt-5 text-sm leading-8 text-[var(--color-on-surface-variant)] md:text-base">
-                    {payload.taskName}
-                  </p>
+                  <div className="mt-1 font-mono text-[0.72rem] uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]">
+                    {currentView === "dashboard"
+                      ? "execution_matrix"
+                      : "workspace_overview"}
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setCurrentView((currentViewState) =>
-                        currentViewState === "dashboard" ? "landing" : "dashboard",
-                      )
-                    }
-                    className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--color-primary)]/20 px-4 py-2 text-sm font-semibold text-[var(--color-primary)] transition hover:bg-[var(--color-primary)]/8"
-                  >
-                    {currentView === "dashboard"
-                      ? "Back to intake"
-                      : "Open strategy matrix"}
-                    <ChevronRight
-                      className={`h-4 w-4 transition ${
-                        currentView === "dashboard" ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
+                  {currentView === "dashboard" ? (
+                    <button
+                      type="button"
+                      onClick={() => setCurrentView("landing")}
+                      className="inline-flex items-center justify-center gap-2 rounded-[12px] border border-[var(--color-border)] px-4 py-3 text-sm font-semibold text-[var(--color-on-surface-variant)] transition hover:border-white/25 hover:text-white"
+                    >
+                      Back to dashboard
+                      <ChevronRight className="h-4 w-4 rotate-180" />
+                    </button>
+                  ) : null}
 
                   <button
                     type="button"
                     onClick={handleResetSync}
-                    className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-[var(--color-on-surface-variant)] transition hover:border-white/20 hover:bg-white/4 hover:text-white"
+                    className="inline-flex min-w-[216px] items-center justify-center gap-3 rounded-[12px] border border-[var(--color-primary)] px-4 py-2.5 font-mono text-[0.82rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-primary)] transition hover:bg-[var(--color-primary)]/8"
                   >
                     <RefreshCw className="h-4 w-4" />
                     Sync all platforms
                   </button>
                 </div>
               </div>
-
-              {currentView === "dashboard" ? (
-                <div className="mt-8">
-                  <StatsRow stats={stats} />
-                </div>
-              ) : null}
             </header>
 
-            <section className="px-6 pb-44 pt-8 md:px-10">
+            <section className="space-y-5 px-5 pb-8 pt-5 md:px-8">
               {currentView === "landing" ? (
                 <LandingView
                   executionStates={executionStates}
-                  filteredActionCount={visibleActionItems.length}
                   isUploading={isUploading}
                   onOpenStrategy={() => setCurrentView("dashboard")}
                   onUploadComplete={handleUploadComplete}
                   onUploadStateChange={handleUploadStateChange}
-                  overviewProps={overviewProps}
-                  pendingActionCount={pendingActionCount}
+                  pendingPreviewCount={pendingPreviewCount}
                   previewItems={previewItems}
                   statusMessage={STATUS_MESSAGES[statusIndex] ?? STATUS_MESSAGES[0]}
                 />
               ) : (
                 <DashboardView
+                  actionItems={actionItems}
                   doNowItems={doNowItems}
                   executionStates={executionStates}
-                  filteredActionCount={visibleActionItems.length}
+                  actionCount={actionItems.length}
                   onExecute={onExecute}
-                  overviewProps={overviewProps}
                   scheduledItems={scheduledItems}
-                  searchQuery={searchQuery}
+                  zulipStatus={zulipStatus}
                 />
               )}
             </section>
           </div>
-
-          <div className="pointer-events-none fixed bottom-5 left-4 right-4 z-40 lg:left-[calc(280px+2.5rem)] lg:right-10">
-            <div className="glass-panel pointer-events-auto mx-auto flex max-w-4xl items-center gap-3 rounded-[24px] px-4 py-3 shadow-[0_30px_90px_rgba(0,0,0,0.45)]">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
-                <Search className="h-5 w-5" strokeWidth={1.8} />
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <label htmlFor="plan-filter" className="sr-only">
-                  Filter tasks
-                </label>
-                <input
-                  id="plan-filter"
-                  type="text"
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Filter tasks, courses, or platforms..."
-                  className="w-full bg-transparent text-sm text-white outline-none placeholder:text-[var(--color-on-surface-variant)]/60 md:text-base"
-                />
-              </div>
-
-              <div className="hidden rounded-full border border-white/8 bg-white/4 px-3 py-1 text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)] sm:block">
-                {visibleActionItems.length}/{actionItems.length} visible
-              </div>
-
-              {searchQuery.trim().length > 0 ? (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className="rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-[var(--color-on-surface-variant)] transition hover:border-white/20 hover:bg-white/4 hover:text-white"
-                >
-                  Clear
-                </button>
-              ) : (
-                <div className="rounded-full border border-white/8 bg-white/4 px-3 py-1 text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]">
-                  Live filter
-                </div>
-              )}
-            </div>
-          </div>
         </main>
       </div>
-
-      {isPlanModalOpen ? (
-        <PlanReadyModal
-          actionCount={actionItems.length}
-          courseLabel={sidebarCourses[0]?.code ?? "PLAN"}
-          fileName={lastUploadFileName}
-          onConfirm={() => {
-            setIsPlanModalOpen(false);
-            setCurrentView("dashboard");
-          }}
-          onDismiss={() => setIsPlanModalOpen(false)}
-          scheduledCount={scheduledCount}
-          taskName={payload.taskName}
-          urgentCount={urgentCount}
-        />
-      ) : null}
     </div>
   );
 }

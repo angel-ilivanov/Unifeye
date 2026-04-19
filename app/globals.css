@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --color-surface: #05070a;
-  --color-surface-container: #0a0d14;
-  --color-surface-bright: #121826;
-  --color-primary: #00d1ff;
-  --color-primary-dim: rgba(0, 209, 255, 0.16);
-  --color-on-surface: #fbfbfe;
-  --color-on-surface-variant: #94a3b8;
-  --color-border: rgba(255, 255, 255, 0.08);
+  --color-surface: #07101f;
+  --color-surface-container: #0d1525;
+  --color-surface-bright: #141d30;
+  --color-primary: #20cbff;
+  --color-primary-dim: rgba(32, 203, 255, 0.14);
+  --color-on-surface: #edf1ff;
+  --color-on-surface-variant: #8f98b7;
+  --color-border: rgba(120, 137, 180, 0.22);
 }
 
 *,
@@ -19,16 +19,14 @@
 
 html {
   min-height: 100%;
+  font-size: 15px;
   background: var(--color-surface);
 }
 
 body {
   min-height: 100vh;
   margin: 0;
-  background:
-    radial-gradient(circle at top, rgba(0, 209, 255, 0.13), transparent 34%),
-    radial-gradient(circle at 85% 18%, rgba(0, 209, 255, 0.06), transparent 22%),
-    var(--color-surface);
+  background: linear-gradient(180deg, #060d18 0%, #08101d 100%);
   color: var(--color-on-surface);
 }
 
@@ -49,23 +47,20 @@ a {
 }
 
 .glass-panel {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02)),
-    rgba(10, 13, 20, 0.8);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-surface-container);
+  border: 1px solid var(--color-border);
 }
 
 .glow-cyan {
-  box-shadow: 0 0 24px rgba(0, 209, 255, 0.16);
+  box-shadow: 0 0 0 1px rgba(32, 203, 255, 0.12);
 }
 
 .glow-cyan-strong {
-  box-shadow: 0 0 38px rgba(0, 209, 255, 0.26);
+  box-shadow: 0 0 0 1px rgba(32, 203, 255, 0.24);
 }
 
 .text-glow {
-  text-shadow: 0 0 16px rgba(0, 209, 255, 0.28);
+  text-shadow: none;
 }
 
 .animate-breathe {
@@ -83,11 +78,11 @@ a {
 
 .scrollbar-custom::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: rgba(0, 209, 255, 0.28);
+  background: rgba(120, 137, 180, 0.4);
 }
 
 .scrollbar-custom::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 209, 255, 0.5);
+  background: rgba(120, 137, 180, 0.65);
 }
 
 @keyframes breathe {

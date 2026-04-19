@@ -12,6 +12,7 @@ type ActionType = (typeof ACTION_TYPES)[number];
 type ExecuteActionRequest = {
   type: ActionType;
   name: string;
+  searchUrl?: string;
 };
 
 type ExecuteActionSuccessResponse = {
@@ -57,9 +58,24 @@ function isExecuteActionRequest(value: unknown): value is ExecuteActionRequest {
   const candidate = value as {
     type?: unknown;
     name?: unknown;
+    searchUrl?: unknown;
   };
 
-  return isActionType(candidate.type) && typeof candidate.name === "string";
+  return (
+    isActionType(candidate.type) &&
+    typeof candidate.name === "string" &&
+    (candidate.searchUrl === undefined || typeof candidate.searchUrl === "string")
+  );
+}
+
+function resolveNavigationUrl(searchUrl: string | undefined, fallbackUrl: string) {
+  if (typeof searchUrl !== "string") {
+    return fallbackUrl;
+  }
+
+  const trimmedSearchUrl = searchUrl.trim();
+
+  return trimmedSearchUrl.length > 0 ? trimmedSearchUrl : fallbackUrl;
 }
 
 function slugifyName(name: string) {
@@ -170,23 +186,35 @@ async function executeZulipAction(
   };
 }
 
-function executeArtemisAction(name: string): ExecuteActionSuccessResponse {
+function executeArtemisAction(
+  name: string,
+  searchUrl?: string,
+): ExecuteActionSuccessResponse {
   return {
     status: "success",
     actionType: "artemis",
     name,
     message: `Artemis navigation prepared for ${name}.`,
-    navigationUrl: buildArtemisNavigationUrl(name),
+    navigationUrl: resolveNavigationUrl(
+      searchUrl,
+      buildArtemisNavigationUrl(name),
+    ),
   };
 }
 
-function executeTumonlineAction(name: string): ExecuteActionSuccessResponse {
+function executeTumonlineAction(
+  name: string,
+  searchUrl?: string,
+): ExecuteActionSuccessResponse {
   return {
     status: "success",
     actionType: "tumonline",
     name,
     message: `TUMonline search is ready for ${name}.`,
-    navigationUrl: buildTumonlineNavigationUrl(name),
+    navigationUrl: resolveNavigationUrl(
+      searchUrl,
+      buildTumonlineNavigationUrl(name),
+    ),
   };
 }
 
@@ -238,9 +266,11 @@ export async function POST(request: NextRequest) {
       case "zulip":
         return Response.json(await executeZulipAction(name));
       case "artemis":
-        return Response.json(executeArtemisAction(name));
+        return Response.json(executeArtemisAction(name, requestBody.searchUrl));
       case "tumonline":
-        return Response.json(executeTumonlineAction(name));
+        return Response.json(
+          executeTumonlineAction(name, requestBody.searchUrl),
+        );
       default:
         return Response.json(
           {

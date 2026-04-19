@@ -3,7 +3,7 @@ import CampusCopilotDashboard, {
 } from "../components/campus-copilot-dashboard";
 
 const demoPayload: CampusCopilotPayload = {
-  taskName: "Autonomous academic orchestration for the upcoming study cycle",
+  taskName: "Workspace overview for the active study cycle",
   execution_results: {
     zulip_status: {
       status: "complete",
@@ -26,21 +26,21 @@ const demoPayload: CampusCopilotPayload = {
         search_url: "https://artemis.example.com/courses/in0002/assignments/3",
       },
       {
-        course_name: "Review IN0015 tutorial material",
-        priority: "schedule",
-        search_url: "https://artemis.example.com/courses/in0015/materials",
+        course_name: "Complete IN0015 Assignment 2",
+        priority: "do_now",
+        search_url: "https://artemis.example.com/courses/in0015/assignments/2",
       },
     ],
     tumonline_courses: [
       {
-        course_name: "Enroll in Computer Architecture",
+        course_name: "Review IN0002 lecture slides: ch.2 Assembler Programming",
         priority: "schedule",
-        search_url: "https://campus.tum.de/tumonline/course-search",
+        search_url: "https://campus.tum.de/tumonline/course-materials",
       },
       {
-        course_name: "Enroll in Institutional Systems Lab",
-        priority: "do_now",
-        search_url: "https://campus.tum.de/tumonline/lab-search",
+        course_name: "Summarize IN0004 chapter 1 Number Systems",
+        priority: "schedule",
+        search_url: "https://campus.tum.de/tumonline/course-notes",
       },
     ],
     artemis_link: {
@@ -51,23 +51,23 @@ const demoPayload: CampusCopilotPayload = {
           search_url: "https://artemis.example.com/courses/in0002/assignments/3",
         },
         {
-          course_name: "Review IN0015 tutorial material",
-          priority: "schedule",
-          search_url: "https://artemis.example.com/courses/in0015/materials",
+          course_name: "Complete IN0015 Assignment 2",
+          priority: "do_now",
+          search_url: "https://artemis.example.com/courses/in0015/assignments/2",
         },
       ],
     },
     tumonline_course_link: {
       links: [
         {
-          course_name: "Enroll in Computer Architecture",
+          course_name: "Review IN0002 lecture slides: ch.2 Assembler Programming",
           priority: "schedule",
-          search_url: "https://campus.tum.de/tumonline/course-search",
+          search_url: "https://campus.tum.de/tumonline/course-materials",
         },
         {
-          course_name: "Enroll in Institutional Systems Lab",
-          priority: "do_now",
-          search_url: "https://campus.tum.de/tumonline/lab-search",
+          course_name: "Summarize IN0004 chapter 1 Number Systems",
+          priority: "schedule",
+          search_url: "https://campus.tum.de/tumonline/course-notes",
         },
       ],
     },
