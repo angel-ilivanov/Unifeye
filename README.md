@@ -2,7 +2,7 @@
 
 Unifeye is an intelligent "semester onboarder" command center. Designed to eliminate the administrative friction at the start of every semester, Unifeye acts as your personal agent, taking your course material and automatically turning it into an executed action plan. 
 
-Simply upload your organizational slides (from Moodle or Artemis), and Unifeye reads the content, extracts the logistics, and creates a prioritized checklist. But it doesn't stop there—it can actively execute these tasks for you, such as joining the required Zulip channels, enrolling you in Artemis courses, and surfacing direct sign-up links for TUMonline lectures and exams.
+Simply upload your organizational slides (from Moodle or Artemis), and Unifeye reads the content, extracts the logistics, and creates a prioritized checklist. But it doesn't stop there—it acts on these tasks for you, such as automatically joining the required Zulip channels, directing you to Artemis course lists, and generating pre-filled search queries for instant TUMonline registration.
 
 <div align="center">
   <img src="screenshots/Screenshot_2026-04-19_at_9.56.19.png" alt="Unifeye Dashboard" width="800"/>
@@ -32,15 +32,15 @@ Simply upload your organizational slides (from Moodle or Artemis), and Unifeye r
 - Pulls in tasks, updates, and team communications in real time.
 - Feeds channel activity into the prioritization pipeline for a unified, centralized task view.
 
-### 🎓 4. Artemis Auto-Enrollment
+### 🎓 4. Artemis Course Integration
 - Automatically identifies relevant Artemis courses based on extracted tasks and module requirements.
-- Simplifies enrollment by preparing the direct links and handling the submission end-to-end where possible.
-- Eliminates friction in the course registration process.
+- Simplifies enrollment by providing a centralized link to the active Artemis course list, enabling you to quickly find and join your courses in just a few clicks.
+- Eliminates the friction of searching for the registration portal manually.
 
-### 🔍 5. TUMonline Course Discovery
-- Searches and surfaces relevant courses and modules from TUMonline using defensive legacy-search matching.
-- Provides direct sign-up links for each course, tutorial, or exam directly in the dashboard.
-- Aligns course recommendations with the student's current task priorities and workload.
+### 🔍 5. TUMonline Course & Exam Discovery
+- Intelligently parses your module details to extract the most effective search query for TUMonline.
+- Generates pre-filled search links that take you directly to the results page with your course or exam already typed in.
+- Saves you the hassle of manually navigating the TUMonline legacy search interface, bridging the gap between your checklist and actual registration.
 
 ---
 
