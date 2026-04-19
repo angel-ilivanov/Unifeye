@@ -20,14 +20,13 @@ workflow:
   features:
     file_upload:
       allowed_file_extensions:
-      - .JPG
-      - .JPEG
-      - .PNG
-      - .GIF
-      - .WEBP
-      - .SVG
+      - .PDF
+      - .DOC
+      - .DOCX
+      - .PPT
+      - .PPTX
       allowed_file_types:
-      - image
+      - document
       allowed_file_upload_methods:
       - local_file
       - remote_url
@@ -319,7 +318,11 @@ workflow:
             - `recommended` = `empfohlen`\n- `immediately` = `sofort`, `unverzüglich`\n\
             - `before first session` = `vor der ersten veranstaltung`, `vor der ersten\
             \ vorlesung`, `vor dem ersten termin`\n- `exam` = `prüfung`, `klausur`\n\
-            - `exam registration` = `prüfungsanmeldung`, `klausuranmeldung`\n\nYour\
+            - `exam registration` = `prüfungsanmeldung`, `klausuranmeldung`\n- `tutorial`\
+            \ = `tutorium`, `tutorien`, `tutorial group`, `tutorial registration`\n\
+            - `exercise` = `übung`, `übungen`, `uebung`, `uebungen`, `übungsgruppe`,\
+            \ `übungsgruppen`, `uebungsgruppe`, `uebungsgruppen`, `exercise group`,\
+            \ `exercise registration`, `übungsanmeldung`, `übungsgruppenanmeldung`\n\nYour\
             \ task is to extract only concrete student logistics and onboarding information\
             \ and return exactly one JSON object with this top-level structure:\n\
             - `thought_process`\n- `zulip_channels`\n- `artemis_courses`\n- `tumonline_courses`\n\
@@ -338,7 +341,10 @@ workflow:
             \ Artemis course, TUMonline course, or TUMonline exam.\n- `search_query`:\
             \ required string. For TUMonline items, use the defensive legacy-search\
             \ rules below. For non-TUMonline items, use the exact `name` unless the\
-            \ source explicitly supports a shorter lookup string.\n- `date`: normalized\
+            \ source explicitly supports a shorter lookup string.\n- Preserve explicit\
+            \ tutorial, tutorium, exercise, and Übung distinctions in `name` when\
+            \ the actionable item is tutorial or exercise registration rather than\
+            \ the parent lecture itself.\n- `date`: normalized\
             \ relevant date string if explicitly available, otherwise `null`.\n- `priority`:\
             \ use `do_now` only when the item has an extracted date and is immediately\
             \ actionable; otherwise use `schedule`.\n- `task_description`: short faithful\
@@ -365,7 +371,12 @@ workflow:
             \ university and course-type words.\n- Remove generic terms such as `Grundlagenpraktikum`,\
             \ `Praktikum`, `Vorlesung`, `Seminar`, `Übung`, `Tutorium`, `Kurs`, `Modul`,\
             \ `Lehrveranstaltung`, `lecture`, `course`, `seminar`, `lab`, and similar\
-            \ boilerplate when they are not the unique identifying part.\n- Remove\
+            \ boilerplate when they are not the unique identifying part.\n- Preserve\
+            \ `Tutorial`, `Tutorium`, `Übung`, `Übungen`, `tutorial`, `exercise`,\
+            \ `exercise group`, and `Übungsgruppe` in `search_query` whenever they\
+            \ are the thing students must register for, choose, or join, or when\
+            \ removing them would collapse the query into a different parent lecture\
+            \ item.\n- Remove\
             \ all punctuation from `search_query`, including colons, hyphens, slashes,\
             \ commas, periods, and parentheses.\n- After removing generic terms and\
             \ punctuation, keep the shortest distinctive phrase needed to find the\
@@ -380,19 +391,27 @@ workflow:
             - `Grundlagenpraktikum: Rechnerarchitektur` -> `Rechnerarchitektur`\n\
             - `Seminar Einführung in die Informatik` -> `Einführung in die Informatik`\n\
             - `IN0005 Einführung in die Softwaretechnik (EIST)` -> `IN0005`\n- `Master\
-            \ Seminar: Human Centered Engineering` -> `Human Centered`\n\nPlatform-specific\
+            \ Seminar: Human Centered Engineering` -> `Human Centered`\n- `Tutorial\
+            \ registration for Einführung in die Softwaretechnik` -> `Tutorial Einführung\
+            \ in die Softwaretechnik`\n- `Übungsgruppenanmeldung Diskrete Mathematik`\
+            \ -> `Übungsgruppen Diskrete Mathematik`\n\nPlatform-specific\
             \ extraction rules:\n- Include Artemis courses only when the text clearly\
             \ indicates students should join, enroll in, access, register for, or\
             \ use them.\n- Include Zulip channels only when the text clearly indicates\
             \ students should join, use, monitor, or follow them.\n- Include TUMonline\
             \ courses and exams when the source provides enough explicit evidence\
             \ for the item name, even if there is no explicit action sentence nearby.\n\
-            - Do not infer Artemis courses or Zulip channels from context alone.\n\
+            - Treat tutorial, tutorium, exercise, and Übungsgruppen registration\
+            \ or enrollment items as concrete course logistics. If the actionable\
+            \ item is clearly tied to a named module or course in the same source,\
+            \ include it instead of collapsing it into the parent lecture.\n- Do\
+            \ not infer Artemis courses or Zulip channels from context alone.\n\
             \nDeduplication rules:\n- Aggressively deduplicate repeated lines, repeated\
             \ bullets, partial duplicates, animated slide fragments, OCR ghosts, headers,\
             \ footers, page numbers, and broken line wraps.\n- If the same course,\
             \ exam, channel, deadline, or action appears multiple times, return it\
-            \ only once.\n\nDate and priority rules:\n- Extract only explicit, actionable,\
+            \ only once.\n- Do not merge tutorial, tutorium, exercise, or Übungsgruppen\
+            \ logistics into the parent lecture item when the student action is different.\n\nDate and priority rules:\n- Extract only explicit, actionable,\
             \ time-bound dates.\n- Use ISO 8601 only when it can be normalized confidently\
             \ from explicit text.\n- Prefer `YYYY-MM-DD` for date-only values.\n-\
             \ Prefer `YYYY-MM-DDTHH:MM` when time is explicitly given.\n- If the date\

@@ -4,6 +4,7 @@ import {
   readFirstDefinedServerEnv,
   readOptionalServerEnv,
 } from "@/lib/server-env";
+import { getUploadValidationError } from "@/lib/upload-file-types";
 
 type ParsedBody = {
   isJson: boolean;
@@ -30,6 +31,12 @@ type DifyWorkflowData = {
   error?: unknown;
 };
 
+type WorkflowApplicationError = {
+  message: string;
+  code?: string;
+  details?: unknown;
+};
+
 class UploadRouteError extends Error {
   statusCode: number;
   details?: unknown;
@@ -53,6 +60,205 @@ class UploadRouteError extends Error {
 
 function isRecord(value: unknown): value is JsonRecord {
   return typeof value === "object" && value !== null;
+}
+
+function tryParseJsonString(value: string) {
+  const trimmedValue = value.trim();
+
+  if (
+    trimmedValue.length === 0 ||
+    (!trimmedValue.startsWith("{") && !trimmedValue.startsWith("["))
+  ) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(trimmedValue) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+function hasCampusCopilotPayload(value: unknown): boolean {
+  if (typeof value === "string") {
+    const parsedValue = tryParseJsonString(value);
+    return parsedValue !== null ? hasCampusCopilotPayload(parsedValue) : false;
+  }
+
+  if (Array.isArray(value)) {
+    return value.some((entry) => hasCampusCopilotPayload(entry));
+  }
+
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const hasTaskName =
+    typeof value.taskName === "string" ||
+    typeof value.task_name === "string" ||
+    typeof value.title === "string";
+  const executionResults = value.execution_results ?? value.executionResults;
+
+  if (hasTaskName && isRecord(executionResults)) {
+    return true;
+  }
+
+  for (const key of [
+    "data",
+    "outputs",
+    "output",
+    "result",
+    "answer",
+    "response",
+    "payload",
+  ]) {
+    if (key in value && hasCampusCopilotPayload(value[key])) {
+      return true;
+    }
+  }
+
+  return Object.values(value).some((entry) => hasCampusCopilotPayload(entry));
+}
+
+function getWorkflowErrorMessage(value: unknown): string | null {
+  if (typeof value === "string") {
+    const trimmedValue = value.trim();
+    return trimmedValue.length > 0 ? trimmedValue : null;
+  }
+
+  if (Array.isArray(value)) {
+    const messages = value
+      .map((entry) => getWorkflowErrorMessage(entry))
+      .filter((entry): entry is string => Boolean(entry));
+
+    return messages.length > 0 ? messages.join("; ") : null;
+  }
+
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  for (const entry of [
+    value.message,
+    value.error,
+    value.detail,
+    value.details,
+  ]) {
+    const message = getWorkflowErrorMessage(entry);
+
+    if (message) {
+      return message;
+    }
+  }
+
+  return null;
+}
+
+function extractWorkflowApplicationError(
+  value: unknown,
+): WorkflowApplicationError | null {
+  if (typeof value === "string") {
+    const parsedValue = tryParseJsonString(value);
+    return parsedValue !== null
+      ? extractWorkflowApplicationError(parsedValue)
+      : null;
+  }
+
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      const nestedError = extractWorkflowApplicationError(entry);
+
+      if (nestedError) {
+        return nestedError;
+      }
+    }
+
+    return null;
+  }
+
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (
+    typeof value.code === "string" &&
+    typeof value.message === "string" &&
+    value.message.trim().length > 0
+  ) {
+    return {
+      message: value.message,
+      code: value.code,
+      details: value.details,
+    };
+  }
+
+  if (typeof value.error === "string" && value.error.trim().length > 0) {
+    return {
+      message: value.error,
+      details: value.details,
+    };
+  }
+
+  if (isRecord(value.error)) {
+    const message = getWorkflowErrorMessage(value.error);
+
+    if (message) {
+      return {
+        message,
+        code: typeof value.error.code === "string" ? value.error.code : undefined,
+        details: value.error.details ?? value.details ?? value.error,
+      };
+    }
+  }
+
+  if (
+    value.success === false ||
+    value.status === "error" ||
+    value.status === "failed"
+  ) {
+    const message = getWorkflowErrorMessage(
+      value.message ?? value.error ?? value.detail ?? value.details,
+    );
+
+    if (message) {
+      return {
+        message,
+        code: typeof value.code === "string" ? value.code : undefined,
+        details: value.details ?? value.error ?? value,
+      };
+    }
+  }
+
+  for (const key of [
+    "data",
+    "outputs",
+    "output",
+    "result",
+    "answer",
+    "response",
+    "payload",
+    "details",
+  ]) {
+    if (!(key in value)) {
+      continue;
+    }
+
+    const nestedError = extractWorkflowApplicationError(value[key]);
+
+    if (nestedError) {
+      return nestedError;
+    }
+  }
+
+  for (const nestedValue of Object.values(value)) {
+    const nestedError = extractWorkflowApplicationError(nestedValue);
+
+    if (nestedError) {
+      return nestedError;
+    }
+  }
+
+  return null;
 }
 
 async function parseResponseBody(response: Response): Promise<ParsedBody> {
@@ -142,21 +348,7 @@ function toInputDefinitions(value: unknown): DifyInputDefinition[] {
   return definitions;
 }
 
-function getFileKind(file: File): "image" | "document" {
-  if (file.type.startsWith("image/")) {
-    return "image";
-  }
-
-  const lowerName = file.name.toLowerCase();
-
-  if (
-    lowerName.endsWith(".png") ||
-    lowerName.endsWith(".jpg") ||
-    lowerName.endsWith(".jpeg")
-  ) {
-    return "image";
-  }
-
+function getFileKind(): "document" {
   return "document";
 }
 
@@ -180,7 +372,6 @@ function getProvidedFormValue(formData: FormData, variable: string) {
 function getRequiredWorkflowInputs(
   inputDefinitions: DifyInputDefinition[],
   formData: FormData,
-  file: File,
 ) {
   const fileDefinitions = inputDefinitions.filter(
     (definition) =>
@@ -206,7 +397,7 @@ function getRequiredWorkflowInputs(
     );
   }
 
-  const fileKind = getFileKind(file);
+  const fileKind = getFileKind();
 
   if (
     fileDefinition.allowedFileTypes.length > 0 &&
@@ -390,6 +581,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const uploadValidationError = getUploadValidationError(file);
+
+    if (uploadValidationError) {
+      return Response.json({ error: uploadValidationError }, { status: 400 });
+    }
+
     const inputDefinitions = await fetchWorkflowInputDefinitions(
       difyApiKey,
       difyApiUrl,
@@ -397,7 +594,6 @@ export async function POST(request: NextRequest) {
     const { fileDefinition, fileKind, inputs } = getRequiredWorkflowInputs(
       inputDefinitions,
       formData,
-      file,
     );
     const uploadedFile = await uploadWorkflowFile(
       difyApiKey,
@@ -442,7 +638,32 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return Response.json(workflowData?.outputs ?? workflowResponse);
+    const workflowOutput = workflowData?.outputs ?? workflowResponse;
+
+    if (hasCampusCopilotPayload(workflowOutput)) {
+      return Response.json(workflowOutput);
+    }
+
+    const workflowApplicationError =
+      extractWorkflowApplicationError(workflowOutput);
+
+    if (workflowApplicationError) {
+      throw new UploadRouteError(
+        "The Dify workflow returned an application error.",
+        502,
+        {
+          details: workflowApplicationError,
+        },
+      );
+    }
+
+    throw new UploadRouteError(
+      "The Dify workflow returned an unexpected payload.",
+      502,
+      {
+        details: workflowOutput,
+      },
+    );
   } catch (error) {
     if (error instanceof UploadRouteError) {
       return Response.json(

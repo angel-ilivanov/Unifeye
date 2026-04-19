@@ -532,19 +532,6 @@ function buildSidebarNodes(
   ];
 }
 
-function getPriorityPresentation(priority: ActionPriority) {
-  return priority === "do_now"
-    ? {
-        badgeLabel: "Do now",
-        badgeClassName: "border-rose-400/18 bg-rose-500/10 text-rose-100",
-      }
-    : {
-        badgeLabel: "Scheduled",
-        badgeClassName:
-          "border-[var(--color-primary)]/20 bg-[var(--color-primary)]/10 text-cyan-50",
-      };
-}
-
 function getPlatformPresentation(source: ActionItem["source"]) {
   switch (source) {
     case "Zulip":
@@ -580,24 +567,6 @@ function getPlatformPresentation(source: ActionItem["source"]) {
           "border-[var(--color-border)] bg-[var(--color-surface-bright)] text-[var(--color-on-surface)]",
         dotClassName: "bg-[var(--color-on-surface-variant)]",
       };
-  }
-}
-
-function getOpenLinkLabel(
-  item: Pick<ActionItem, "source">,
-  isManualActionRequired: boolean,
-) {
-  switch (item.source) {
-    case "Zulip":
-      return "Open channel";
-    case "Artemis":
-      return "Open in Artemis";
-    case "TUMonline Courses":
-      return "Open course";
-    case "TUMonline Exams":
-      return "Open exam";
-    default:
-      return isManualActionRequired ? "Open manually" : "Open link";
   }
 }
 
@@ -814,7 +783,11 @@ function toExamLinks(value: unknown): PrioritizedExamLink[] {
           ? entry.searchUrl
           : "";
 
-    if (!examName || !priority) {
+    if (
+      !examName ||
+      !priority ||
+      isTutorialLikeTumonlineTitle(examName)
+    ) {
       return [];
     }
 
@@ -1361,7 +1334,6 @@ function ActionCard({
     item.searchUrl,
     executionState?.navigationUrl,
   );
-  const priorityPresentation = getPriorityPresentation(item.priority);
 
   return (
     <article
@@ -1398,27 +1370,8 @@ function ActionCard({
           </div>
 
           <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2.5">
             <h3 className="text-[0.98rem] font-semibold text-white">{item.title}</h3>
-            <PlatformBadge source={item.source} />
-            {isZulipAction ? (
-              <span
-                className={`rounded-[10px] border px-2.5 py-1 font-mono text-[0.64rem] uppercase tracking-[0.18em] ${
-                    isZulipJoined
-                      ? "border-emerald-300/25 bg-emerald-400/14 text-emerald-50"
-                      : "border-cyan-400/20 bg-cyan-400/10 text-cyan-50"
-                  }`}
-                >
-                  {isZulipJoined ? "Joined channel" : "Main feature"}
-                </span>
-              ) : null}
-              <span
-                className={`rounded-[10px] border px-2.5 py-1 font-mono text-[0.64rem] uppercase tracking-[0.18em] ${priorityPresentation.badgeClassName}`}
-              >
-                {priorityPresentation.badgeLabel}
-              </span>
-            </div>
-            {executionState?.message ? (
+            {executionState?.message && !isSuccess ? (
               <div
                 className={`mt-3 rounded-[12px] border px-3.5 py-2.5 text-sm ${
                   isZulipJoined
@@ -1433,48 +1386,62 @@ function ActionCard({
                 {executionState.message}
               </div>
             ) : null}
+            <div className="mt-3 flex flex-wrap items-center gap-2.5">
+              <PlatformBadge source={item.source} />
+              {isZulipAction ? (
+                <span
+                  className={`rounded-[10px] border px-2.5 py-1 font-mono text-[0.64rem] uppercase tracking-[0.18em] ${
+                    isZulipJoined
+                      ? "border-emerald-300/25 bg-emerald-400/14 text-emerald-50"
+                      : "border-cyan-400/20 bg-cyan-400/10 text-cyan-50"
+                  }`}
+                >
+                  {isZulipJoined ? "Joined channel" : "Main feature"}
+                </span>
+              ) : null}
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2.5 xl:justify-end">
-        {!isSuccess ? (
-          <button
-            type="button"
-            disabled={isWorking}
-            onClick={() => void onExecute(item)}
-            className="inline-flex items-center justify-center gap-2 rounded-[12px] border border-[var(--color-primary)] bg-[var(--color-primary)] px-3.5 py-2.5 text-sm font-semibold text-[#04101a] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isWorking ? (
-              <>
-                <RefreshCw className="h-4 w-4 animate-spin" />
-                {isZulipAction ? "Joining" : "Working"}
-              </>
-            ) : hasError ? (
-              isZulipAction ? "Retry join" : "Retry"
-            ) : isManualActionRequired ? (
-              isZulipAction ? "Retry join" : "Retry handoff"
-            ) : (
-              isZulipAction ? "Join channel" : "Execute action"
-            )}
-          </button>
-        ) : (
-          <div className="inline-flex items-center rounded-[12px] border border-emerald-400/18 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-50">
-            {isZulipAction ? "Joined channel" : "Completed"}
-          </div>
-        )}
+        <div className="flex w-full flex-col gap-2.5 xl:w-[208px] xl:shrink-0">
+          {!isSuccess ? (
+            <button
+              type="button"
+              disabled={isWorking}
+              onClick={() => void onExecute(item)}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-[12px] border border-[var(--color-primary)] bg-[var(--color-primary)] px-3.5 py-2.5 text-sm font-semibold text-[#04101a] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isWorking ? (
+                <>
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  {isZulipAction ? "Joining" : "Working"}
+                </>
+              ) : hasError ? (
+                isZulipAction ? "Retry join" : "Retry"
+              ) : isManualActionRequired ? (
+                isZulipAction ? "Retry join" : "Retry handoff"
+              ) : (
+                isZulipAction ? "Join channel" : "Execute action"
+              )}
+            </button>
+          ) : (
+            <div className="inline-flex w-full items-center justify-center rounded-[12px] border border-emerald-400/18 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-50">
+              {isZulipAction ? "Joined channel" : "Completed"}
+            </div>
+          )}
 
-        {openLinkUrl ? (
-          <a
-            href={openLinkUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center justify-center gap-2 rounded-[12px] border border-[var(--color-border)] px-3.5 py-2.5 text-sm font-semibold text-[var(--color-on-surface-variant)] transition hover:border-white/25 hover:text-white"
-          >
-            {getOpenLinkLabel(item, isManualActionRequired)}
-            <ArrowUpRight className="h-4 w-4" />
-          </a>
-        ) : null}
-      </div>
+          {isSuccess && openLinkUrl ? (
+            <a
+              href={openLinkUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-[12px] border border-[var(--color-border)] px-3.5 py-2.5 text-sm font-semibold text-[var(--color-on-surface-variant)] transition hover:border-white/25 hover:text-white"
+            >
+              Open
+              <ArrowUpRight className="h-4 w-4" />
+            </a>
+          ) : null}
+        </div>
       </div>
     </article>
   );
@@ -1609,7 +1576,6 @@ function DashboardView({
   actionItems,
   doNowItems,
   executionStates,
-  actionCount,
   onExecute,
   scheduledItems,
   zulipStatus,
@@ -1617,7 +1583,6 @@ function DashboardView({
   actionItems: ActionItem[];
   doNowItems: ActionItem[];
   executionStates: Record<string, ActionExecutionState>;
-  actionCount: number;
   onExecute: (item: ActionItem) => Promise<void>;
   scheduledItems: ActionItem[];
   zulipStatus: ZulipStatus;
@@ -1629,23 +1594,6 @@ function DashboardView({
         executionStates={executionStates}
         zulipStatus={zulipStatus}
       />
-
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <div className="font-mono text-[0.68rem] uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]">
-            execution_matrix
-          </div>
-          <p className="mt-2 text-sm leading-7 text-[var(--color-on-surface-variant)]">
-            {actionCount > 0
-              ? `${actionCount} actions are split into immediate and scheduled lanes.`
-              : "Upload a document to create the first execution lanes."}
-          </p>
-        </div>
-
-        <div className="rounded-[10px] bg-[var(--color-surface-bright)] px-3 py-2 font-mono text-[0.72rem] uppercase tracking-[0.18em] text-[var(--color-on-surface-variant)]">
-          {actionCount} open
-        </div>
-      </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
         <MatrixColumn
@@ -1924,7 +1872,6 @@ export function CampusCopilotDashboard({
                   actionItems={actionItems}
                   doNowItems={doNowItems}
                   executionStates={executionStates}
-                  actionCount={actionItems.length}
                   onExecute={onExecute}
                   scheduledItems={scheduledItems}
                   zulipStatus={zulipStatus}

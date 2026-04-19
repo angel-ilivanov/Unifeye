@@ -14,17 +14,13 @@ import {
   ScanEye,
 } from "lucide-react";
 
-import { UnifeyeMark } from "./unifeye-logo";
+import {
+  MAX_UPLOAD_FILE_SIZE,
+  UPLOAD_ACCEPT_ATTRIBUTE,
+  getUploadValidationError,
+} from "@/lib/upload-file-types";
 
-const MAX_FILE_SIZE = 15 * 1024 * 1024;
-const ACCEPT_ATTRIBUTE =
-  ".pdf,.png,.jpg,application/pdf,image/png,image/jpeg";
-const ACCEPTED_EXTENSIONS = new Set([".pdf", ".png", ".jpg"]);
-const ACCEPTED_MIME_TYPES = new Set([
-  "application/pdf",
-  "image/png",
-  "image/jpeg",
-]);
+import { UnifeyeMark } from "./unifeye-logo";
 
 type UploadContext = {
   fileName: string;
@@ -99,16 +95,6 @@ function formatUploadError(responseJson: Record<string, unknown> | null) {
   return `${error}${upstreamStatus}: ${detailMessage}`;
 }
 
-function getFileExtension(fileName: string) {
-  const lastDotIndex = fileName.lastIndexOf(".");
-
-  if (lastDotIndex === -1) {
-    return "";
-  }
-
-  return fileName.slice(lastDotIndex).toLowerCase();
-}
-
 function formatFileSize(bytes: number) {
   if (bytes < 1024 * 1024) {
     return `${Math.round(bytes / 1024)} KB`;
@@ -118,20 +104,7 @@ function formatFileSize(bytes: number) {
 }
 
 function validateFile(file: File) {
-  const extension = getFileExtension(file.name);
-  const hasValidMimeType =
-    file.type.length > 0 && ACCEPTED_MIME_TYPES.has(file.type);
-  const hasValidExtension = ACCEPTED_EXTENSIONS.has(extension);
-
-  if (!hasValidMimeType && !hasValidExtension) {
-    return "Only PDF, PNG, and JPG files are supported.";
-  }
-
-  if (file.size > MAX_FILE_SIZE) {
-    return "File size must be 15MB or smaller.";
-  }
-
-  return null;
+  return getUploadValidationError(file);
 }
 
 export default function DocumentIngestion({
@@ -225,7 +198,7 @@ export default function DocumentIngestion({
     event.preventDefault();
 
     if (!selectedFile) {
-      setErrorMessage("Choose a PDF, PNG, or JPG file before uploading.");
+      setErrorMessage("Choose a PDF, Word, or PowerPoint file before uploading.");
       return;
     }
 
@@ -294,7 +267,7 @@ export default function DocumentIngestion({
           ref={fileInputRef}
           id={inputId}
           type="file"
-          accept={ACCEPT_ATTRIBUTE}
+          accept={UPLOAD_ACCEPT_ATTRIBUTE}
           className="sr-only"
           disabled={isUploading}
           onChange={handleFileChange}
@@ -335,11 +308,11 @@ export default function DocumentIngestion({
             ) : (
               <>
                 <h2 className="mt-6 font-display text-2xl font-semibold text-white md:text-[2.25rem]">
-                  Drop files here to initialize
+                  Drop your first lecture slides here
                 </h2>
                 <p className="mt-3 max-w-2xl font-mono text-sm leading-7 text-[var(--color-on-surface-variant)]">
-                  Or click to browse. Supported formats: .pdf, .png, .jpg for
-                  automated parsing and assignment.
+                  Or click to browse. Supported formats: .pdf, .doc, .docx,
+                  .ppt, .pptx for automated parsing and assignment.
                 </p>
               </>
             )}
@@ -349,13 +322,13 @@ export default function DocumentIngestion({
                 PDF
               </span>
               <span className="rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-bright)] px-3 py-1.5">
-                PNG
+                DOC/DOCX
               </span>
               <span className="rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-bright)] px-3 py-1.5">
-                JPG
+                PPT/PPTX
               </span>
               <span className="rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-bright)] px-3 py-1.5">
-                15MB max
+                {Math.round(MAX_UPLOAD_FILE_SIZE / (1024 * 1024))}MB max
               </span>
             </div>
           </div>
