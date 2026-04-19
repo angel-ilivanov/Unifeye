@@ -13,6 +13,7 @@ import {
   History,
   LayoutDashboard,
   ListTodo,
+  Lock,
   Network,
   RefreshCw,
   type LucideIcon,
@@ -536,34 +537,81 @@ function getPriorityPresentation(priority: ActionPriority) {
     ? {
         badgeLabel: "Do now",
         badgeClassName: "border-rose-400/18 bg-rose-500/10 text-rose-100",
-        railClassName: "bg-rose-400/70",
-        summaryLabel: "Priority: do now",
       }
     : {
         badgeLabel: "Scheduled",
         badgeClassName:
           "border-[var(--color-primary)]/20 bg-[var(--color-primary)]/10 text-cyan-50",
-        railClassName: "bg-[var(--color-primary)]/70",
-        summaryLabel: "Priority: scheduled",
       };
 }
 
-function getPlatformLabel(source: ActionItem["source"]) {
+function getPlatformPresentation(source: ActionItem["source"]) {
   switch (source) {
     case "Zulip":
-      return "Zulip main handoff";
+      return {
+        badgeLabel: "Zulip",
+        badgeClassName: "border-cyan-400/20 bg-cyan-400/10 text-cyan-50",
+        dotClassName: "bg-cyan-300",
+      };
+    case "Artemis":
+      return {
+        badgeLabel: "Artemis",
+        badgeClassName:
+          "border-violet-400/20 bg-violet-500/10 text-violet-50",
+        dotClassName: "bg-violet-300",
+      };
     case "TUMonline Courses":
+      return {
+        badgeLabel: "TUM course",
+        badgeClassName:
+          "border-indigo-400/20 bg-indigo-500/10 text-indigo-50",
+        dotClassName: "bg-indigo-300",
+      };
     case "TUMonline Exams":
-      return "TUMonline";
+      return {
+        badgeLabel: "TUM exam",
+        badgeClassName: "border-amber-400/20 bg-amber-500/10 text-amber-50",
+        dotClassName: "bg-amber-300",
+      };
     default:
-      return source;
+      return {
+        badgeLabel: source,
+        badgeClassName:
+          "border-[var(--color-border)] bg-[var(--color-surface-bright)] text-[var(--color-on-surface)]",
+        dotClassName: "bg-[var(--color-on-surface-variant)]",
+      };
   }
 }
 
-function getTaskMetaLine(item: ActionItem) {
-  return `${getPriorityPresentation(item.priority).summaryLabel} | Platform: ${getPlatformLabel(
-    item.source,
-  )}`;
+function getOpenLinkLabel(
+  item: Pick<ActionItem, "source">,
+  isManualActionRequired: boolean,
+) {
+  switch (item.source) {
+    case "Zulip":
+      return "Open channel";
+    case "Artemis":
+      return "Open in Artemis";
+    case "TUMonline Courses":
+      return "Open course";
+    case "TUMonline Exams":
+      return "Open exam";
+    default:
+      return isManualActionRequired ? "Open manually" : "Open link";
+  }
+}
+
+function PlatformBadge({ source }: { source: ActionItem["source"] }) {
+  const platform = getPlatformPresentation(source);
+
+  return (
+    <span
+      className={`inline-flex items-center gap-2 rounded-[10px] border px-2.5 py-1 font-mono text-[0.64rem] uppercase tracking-[0.18em] ${platform.badgeClassName}`}
+    >
+      <span className={`h-2 w-2 rounded-full ${platform.dotClassName}`} />
+      {platform.badgeLabel}
+    </span>
+  );
 }
 
 function resolveNavigationUrl(searchUrl?: string, fallbackUrl?: string) {
@@ -971,14 +1019,17 @@ function extractPayloadFromUnknown(value: unknown): CampusCopilotPayload | null 
 
 function NavButton({ item }: { item: NavItem }) {
   const Icon = item.icon;
+  const isDisabled = !item.active;
 
   return (
     <button
       type="button"
+      disabled={isDisabled}
+      title={isDisabled ? "Feature Roadmap: V2" : undefined}
       className={`flex w-full items-center gap-2.5 rounded-[13px] border px-3.5 py-3 text-left text-[0.95rem] transition ${
         item.active
           ? "border-[rgba(32,203,255,0.28)] bg-[var(--color-surface-bright)] text-white shadow-[inset_2px_0_0_0_var(--color-primary)]"
-          : "border-transparent text-[var(--color-on-surface-variant)] hover:border-[var(--color-border)] hover:bg-[var(--color-surface-bright)]/60 hover:text-white"
+          : "cursor-not-allowed border-transparent text-[var(--color-on-surface-variant)] opacity-50 grayscale disabled:pointer-events-none"
       }`}
     >
       <Icon className="h-5 w-5 shrink-0" strokeWidth={1.8} />
@@ -1002,7 +1053,8 @@ function Sidebar({
     <aside className="hidden border-r border-[var(--color-border)] bg-[#09101d] lg:flex lg:min-h-full lg:flex-col">
       <div className="border-b border-[var(--color-border)] px-6 py-6">
         <UnifeyeLogo
-          subtitle="workspace"
+          subtitle="semester onboarder"
+          subtitleClassName="whitespace-nowrap text-[0.56rem] tracking-[0.1em]"
           className={isUploading ? "animate-breathe" : ""}
         />
       </div>
@@ -1153,6 +1205,7 @@ function PreviewTaskCard({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-base font-semibold text-white">{item.title}</h3>
+            <PlatformBadge source={item.source} />
             {isZulipAction ? (
               <span
                 className={`rounded-full border px-2.5 py-1 font-mono text-[0.6rem] uppercase tracking-[0.16em] ${
@@ -1165,9 +1218,6 @@ function PreviewTaskCard({
               </span>
             ) : null}
           </div>
-          <p className="mt-1.5 font-mono text-[0.68rem] tracking-[0.08em] text-[#89a9ff]">
-            {getTaskMetaLine(item)}
-          </p>
         </div>
       </div>
     </article>
@@ -1348,11 +1398,12 @@ function ActionCard({
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <h3 className="text-[0.98rem] font-semibold text-white">{item.title}</h3>
-              {isZulipAction ? (
-                <span
-                  className={`rounded-[10px] border px-2.5 py-1 font-mono text-[0.64rem] uppercase tracking-[0.18em] ${
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h3 className="text-[0.98rem] font-semibold text-white">{item.title}</h3>
+            <PlatformBadge source={item.source} />
+            {isZulipAction ? (
+              <span
+                className={`rounded-[10px] border px-2.5 py-1 font-mono text-[0.64rem] uppercase tracking-[0.18em] ${
                     isZulipJoined
                       ? "border-emerald-300/25 bg-emerald-400/14 text-emerald-50"
                       : "border-cyan-400/20 bg-cyan-400/10 text-cyan-50"
@@ -1367,11 +1418,6 @@ function ActionCard({
                 {priorityPresentation.badgeLabel}
               </span>
             </div>
-
-            <p className="mt-1.5 font-mono text-[0.68rem] tracking-[0.08em] text-[#89a9ff]">
-              {getTaskMetaLine(item)}
-            </p>
-
             {executionState?.message ? (
               <div
                 className={`mt-3 rounded-[12px] border px-3.5 py-2.5 text-sm ${
@@ -1424,7 +1470,7 @@ function ActionCard({
             rel="noreferrer"
             className="inline-flex items-center justify-center gap-2 rounded-[12px] border border-[var(--color-border)] px-3.5 py-2.5 text-sm font-semibold text-[var(--color-on-surface-variant)] transition hover:border-white/25 hover:text-white"
           >
-            {isManualActionRequired ? "Open manually" : "Open link"}
+            {getOpenLinkLabel(item, isManualActionRequired)}
             <ArrowUpRight className="h-4 w-4" />
           </a>
         ) : null}
@@ -1693,13 +1739,6 @@ export function CampusCopilotDashboard({
     });
   }
 
-  function handleResetSync() {
-    startTransition(() => {
-      setExecutionStates({});
-      setZulipStatus(getInitialZulipStatus(payload.execution_results));
-    });
-  }
-
   async function onExecute(item: ActionItem) {
     const actionKey = getActionKey(item);
     const pendingNavigationWindow = openPendingNavigationWindow(item.actionType);
@@ -1857,11 +1896,12 @@ export function CampusCopilotDashboard({
 
                   <button
                     type="button"
-                    onClick={handleResetSync}
-                    className="inline-flex min-w-[216px] items-center justify-center gap-3 rounded-[12px] border border-[var(--color-primary)] px-4 py-2.5 font-mono text-[0.82rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-primary)] transition hover:bg-[var(--color-primary)]/8"
+                    disabled
+                    title="Feature Roadmap: V2"
+                    className="inline-flex min-w-[216px] cursor-not-allowed items-center justify-center gap-3 rounded-[12px] border border-white/10 bg-white/[0.03] px-4 py-2.5 font-mono text-[0.82rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-on-surface-variant)] opacity-50 grayscale transition shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] disabled:pointer-events-none"
                   >
-                    <RefreshCw className="h-4 w-4" />
-                    Sync all platforms
+                    <Lock className="h-4 w-4" strokeWidth={1.9} />
+                    Roadmap / V2
                   </button>
                 </div>
               </div>

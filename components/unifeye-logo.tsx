@@ -5,6 +5,7 @@ type UnifeyeMarkProps = {
 type UnifeyeLogoProps = {
   className?: string;
   subtitle?: string;
+  subtitleClassName?: string;
 };
 
 export function UnifeyeMark({ className = "h-8 w-[3rem]" }: UnifeyeMarkProps) {
@@ -29,6 +30,7 @@ export function UnifeyeMark({ className = "h-8 w-[3rem]" }: UnifeyeMarkProps) {
 export default function UnifeyeLogo({
   className = "",
   subtitle,
+  subtitleClassName = "",
 }: UnifeyeLogoProps) {
   return (
     <div className={`flex items-center gap-3 ${className}`}>
@@ -38,7 +40,9 @@ export default function UnifeyeLogo({
           UNIFEYE
         </div>
         {subtitle ? (
-          <div className="font-mono text-[0.68rem] uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]">
+          <div
+            className={`font-mono text-[0.68rem] uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)] ${subtitleClassName}`}
+          >
             {subtitle}
           </div>
         ) : null}
