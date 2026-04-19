@@ -95,12 +95,14 @@ function buildArtemisNavigationUrl(name: string) {
 
 const TUMONLINE_GRUNDLAGENPRAKTIKUM_PREFIX =
   /^Grundlagenpraktikum(?:\s*:\s*|\s+)/u;
+const TUMONLINE_REMOVED_SEARCH_WORDS_PATTERN = /\bZWEIGWAHL\b/giu;
 
 function normalizeTumonlineSearchName(name: string) {
-  return name.replace(
-    TUMONLINE_GRUNDLAGENPRAKTIKUM_PREFIX,
-    "Grundlagenpraktikum: ",
-  );
+  return name
+    .replace(TUMONLINE_REMOVED_SEARCH_WORDS_PATTERN, " ")
+    .replace(/\s+/gu, " ")
+    .trim()
+    .replace(TUMONLINE_GRUNDLAGENPRAKTIKUM_PREFIX, "Grundlagenpraktikum: ");
 }
 
 function normalizeTumonlineSearchUrl(searchUrl: string, name: string) {

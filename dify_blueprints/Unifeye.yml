@@ -793,9 +793,11 @@ workflow:
           \        return \"\"\n\n    if isinstance(course, dict):\n        priority\
           \ = course.get(\"priority\", \"\")\n        if priority is None:\n     \
           \       return \"\"\n        return str(priority)\n\n    return \"\"\n\n\
-          \ndef _normalize_tumonline_course_query(course_name: str) -> str:\n    return\
-          \ re.sub(\n        r\"^Grundlagenpraktikum(?:\\s*:\\s*|\\s+)\",\n   \
-          \     \"Grundlagenpraktikum: \",\n        course_name,\n    )\n\n\n\
+          \ndef _normalize_tumonline_course_query(course_name: str) -> str:\n    normalized_name\
+          \ = re.sub(r\"\\bZWEIGWAHL\\b\", \" \", course_name, flags=re.IGNORECASE)\n\
+          \    normalized_name = re.sub(r\"\\s+\", \" \", normalized_name).strip()\n\
+          \    return re.sub(\n        r\"^Grundlagenpraktikum(?:\\s*:\\s*|\\s+)\",\n\
+          \        \"Grundlagenpraktikum: \",\n        normalized_name,\n    )\n\n\n\
           def _encode_course_query(course_name: str) -> str:\n    # Start with a\
           \ fully encoded query, then decode only multibyte UTF-8\n    # sequences\
           \ so letters like \"ü\" remain readable while reserved\n    # characters\
@@ -880,9 +882,11 @@ workflow:
           \ str):\n        return \"\"\n\n    if isinstance(exam, dict):\n       \
           \ priority = exam.get(\"priority\", \"\")\n        if priority is None:\n\
           \            return \"\"\n        return str(priority)\n\n    return \"\"\
-          \n\n\ndef _normalize_tumonline_exam_query(exam_query: str) -> str:\n    return\
-          \ re.sub(\n        r\"^Grundlagenpraktikum(?:\\s*:\\s*|\\s+)\",\n    \
-          \    \"Grundlagenpraktikum: \",\n        exam_query,\n    )\n\n\n\
+          \n\n\ndef _normalize_tumonline_exam_query(exam_query: str) -> str:\n    normalized_query\
+          \ = re.sub(r\"\\bZWEIGWAHL\\b\", \" \", exam_query, flags=re.IGNORECASE)\n\
+          \    normalized_query = re.sub(r\"\\s+\", \" \", normalized_query).strip()\n\
+          \    return re.sub(\n        r\"^Grundlagenpraktikum(?:\\s*:\\s*|\\s+)\",\n\
+          \        \"Grundlagenpraktikum: \",\n        normalized_query,\n    )\n\n\n\
           def _encode_exam_query(exam_query: str) -> str:\n    # Start with\
           \ a fully encoded query, then decode only multibyte UTF-8\n    # sequences\
           \ so letters like \"ü\" remain readable while reserved\n    # characters\

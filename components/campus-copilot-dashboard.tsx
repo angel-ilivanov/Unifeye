@@ -143,6 +143,8 @@ const TUMONLINE_PARENT_COURSE_PATTERN =
   /\b(tutorial|tutorials|ubung|ubungen|uebung|uebungen)\b/;
 const TUMONLINE_GRUNDLAGENPRAKTIKUM_PREFIX =
   /^Grundlagenpraktikum(?:\s*:\s*|\s+)/u;
+const TUMONLINE_REMOVED_SEARCH_WORDS_PATTERN = /\bZWEIGWAHL\b/giu;
+const TUMONLINE_EXCLUDED_TITLE_PATTERN = /\bzweigwahl\b/u;
 
 const COURSE_HINT_STOP_WORDS = new Set([
   "an",
@@ -201,11 +203,16 @@ function isTutorialLikeTumonlineTitle(title: string) {
   return TUMONLINE_PARENT_COURSE_PATTERN.test(normalizeLookupText(title));
 }
 
+function isExcludedTumonlineTitle(title: string) {
+  return TUMONLINE_EXCLUDED_TITLE_PATTERN.test(normalizeLookupText(title));
+}
+
 function normalizeTumonlineQueryText(value: string) {
-  return value.replace(
-    TUMONLINE_GRUNDLAGENPRAKTIKUM_PREFIX,
-    "Grundlagenpraktikum: ",
-  );
+  return value
+    .replace(TUMONLINE_REMOVED_SEARCH_WORDS_PATTERN, " ")
+    .replace(/\s+/gu, " ")
+    .trim()
+    .replace(TUMONLINE_GRUNDLAGENPRAKTIKUM_PREFIX, "Grundlagenpraktikum: ");
 }
 
 function normalizeTumonlineSearchUrl(searchUrl: string, title: string) {
@@ -406,9 +413,11 @@ function collectActionItems(
   );
 
   const tumCourseItems = toActionItems(
-    executionResults.tumonline_courses ??
+    (
+      executionResults.tumonline_courses ??
       executionResults.tumonline_course_link?.links ??
-      [],
+      []
+    ).filter((item) => !isExcludedTumonlineTitle(item.course_name)),
     {
       getTitle: (item) => item.course_name,
       getSearchUrl: (item) =>
@@ -419,7 +428,9 @@ function collectActionItems(
   );
 
   const tumExamItems = toActionItems(
-    executionResults.tumonline_exam_link?.links ?? [],
+    (executionResults.tumonline_exam_link?.links ?? []).filter(
+      (item) => !isExcludedTumonlineTitle(item.exam_name),
+    ),
     {
       getTitle: (item) => item.exam_name,
       getSearchUrl: (item) =>
@@ -790,6 +801,14 @@ function toCourseLinks(value: unknown): PrioritizedCourseLink[] {
   });
 }
 
+function filterTumonlineCourseLinks(links: PrioritizedCourseLink[]) {
+  return links.filter((link) => !isExcludedTumonlineTitle(link.course_name));
+}
+
+function filterTumonlineExamLinks(links: PrioritizedExamLink[]) {
+  return links.filter((link) => !isExcludedTumonlineTitle(link.exam_name));
+}
+
 function toExamLinks(value: unknown): PrioritizedExamLink[] {
   if (!Array.isArray(value)) {
     return [];
@@ -817,7 +836,8 @@ function toExamLinks(value: unknown): PrioritizedExamLink[] {
     if (
       !examName ||
       !priority ||
-      isTutorialLikeTumonlineTitle(examName)
+      isTutorialLikeTumonlineTitle(examName) ||
+      isExcludedTumonlineTitle(examName)
     ) {
       return [];
     }
@@ -867,16 +887,30 @@ function toLinkedCourseGroup(value: unknown) {
   return links.length > 0 ? { links } : undefined;
 }
 
-function toLinkedExamGroup(value: unknown) {
+function toLinkedTumonlineCourseGroup(value: unknown) {
   if (isRecord(value)) {
-    const links = toExamLinks(value.links);
+    const links = filterTumonlineCourseLinks(toCourseLinks(value.links));
 
     if (links.length > 0) {
       return { links };
     }
   }
 
-  const links = toExamLinks(value);
+  const links = filterTumonlineCourseLinks(toCourseLinks(value));
+
+  return links.length > 0 ? { links } : undefined;
+}
+
+function toLinkedExamGroup(value: unknown) {
+  if (isRecord(value)) {
+    const links = filterTumonlineExamLinks(toExamLinks(value.links));
+
+    if (links.length > 0) {
+      return { links };
+    }
+  }
+
+  const links = filterTumonlineExamLinks(toExamLinks(value));
 
   return links.length > 0 ? { links } : undefined;
 }
@@ -905,8 +939,8 @@ function coerceExecutionResults(
   const artemisCourses = toCourseLinks(
     value.artemis_courses ?? value.artemisCourses,
   );
-  const tumonlineCourses = toCourseLinks(
-    value.tumonline_courses ?? value.tumonlineCourses,
+  const tumonlineCourses = filterTumonlineCourseLinks(
+    toCourseLinks(value.tumonline_courses ?? value.tumonlineCourses),
   );
 
   return {
@@ -916,7 +950,7 @@ function coerceExecutionResults(
     tumonline_courses:
       tumonlineCourses.length > 0 ? tumonlineCourses : undefined,
     artemis_link: toLinkedCourseGroup(value.artemis_link ?? value.artemisLink),
-    tumonline_course_link: toLinkedCourseGroup(
+    tumonline_course_link: toLinkedTumonlineCourseGroup(
       value.tumonline_course_link ?? value.tumonlineCourseLink,
     ),
     tumonline_exam_link: toLinkedExamGroup(
