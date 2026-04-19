@@ -1,0 +1,1155 @@
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  icon_type: emoji
+  mode: workflow
+  name: Unifeye
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/bedrock:0.0.64@0c3541500b49b8ca73372104e7e74b84905632bdfaa64b02c2fcc8dc45eb69a0
+    version: null
+kind: app
+version: 0.6.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 50
+        image_file_batch_limit: 10
+        image_file_size_limit: 10
+        single_chunk_attachment_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: document-extractor
+      id: 1776469800336-source-1776469879403-target
+      selected: false
+      source: '1776469800336'
+      sourceHandle: source
+      target: '1776469879403'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: document-extractor
+        targetType: llm
+      id: 1776469879403-source-1776494502774-target
+      selected: false
+      source: '1776469879403'
+      sourceHandle: source
+      target: '1776494502774'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: 1776494502774-source-1776511763423-target
+      selected: false
+      source: '1776494502774'
+      sourceHandle: source
+      target: '1776511763423'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: 1776494502774-source-1776517881230-target
+      selected: false
+      source: '1776494502774'
+      sourceHandle: source
+      target: '1776517881230'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: 1776494502774-source-17765239437820-target
+      selected: false
+      source: '1776494502774'
+      sourceHandle: source
+      target: '17765239437820'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: 1776494502774-source-1776526351248-target
+      source: '1776494502774'
+      sourceHandle: source
+      target: '1776526351248'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: llm
+      id: 1776494502774-source-1776526688964-target
+      source: '1776494502774'
+      sourceHandle: source
+      target: '1776526688964'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: 1776526688964-source-1776534235472-target
+      source: '1776526688964'
+      sourceHandle: source
+      target: '1776534235472'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: code
+        targetType: code
+      id: 1776511763423-source-1776534235472-target
+      source: '1776511763423'
+      sourceHandle: source
+      target: '1776534235472'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: code
+        targetType: code
+      id: 1776517881230-source-1776534235472-target
+      source: '1776517881230'
+      sourceHandle: source
+      target: '1776534235472'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: code
+        targetType: code
+      id: 17765239437820-source-1776534235472-target
+      source: '17765239437820'
+      sourceHandle: source
+      target: '1776534235472'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: code
+        targetType: code
+      id: 1776526351248-source-1776534235472-target
+      source: '1776526351248'
+      sourceHandle: source
+      target: '1776534235472'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: code
+        targetType: end
+      id: 1776534235472-source-1776534581321-target
+      source: '1776534235472'
+      sourceHandle: source
+      target: '1776534581321'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: User Input
+        type: start
+        variables:
+        - allowed_file_extensions: []
+          allowed_file_types:
+          - document
+          allowed_file_upload_methods:
+          - local_file
+          - remote_url
+          default: ''
+          hint: ''
+          label: Upload your first lecture's presentation
+          max_length: 5
+          options: []
+          placeholder: ''
+          required: true
+          type: file-list
+          variable: organizational_slides
+        - default: ''
+          hint: ''
+          label: zulip_api_key
+          options: []
+          placeholder: ''
+          required: true
+          type: text-input
+          variable: zulip_api_key
+        - default: ''
+          hint: ''
+          label: zulip_email
+          options: []
+          placeholder: ''
+          required: true
+          type: text-input
+          variable: zulip_email
+      height: 161
+      id: '1776469800336'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        is_array_file: true
+        selected: false
+        title: Doc Extractor
+        type: document-extractor
+        variable_selector:
+        - '1776469800336'
+        - organizational_slides
+      height: 104
+      id: '1776469879403'
+      position:
+        x: 382
+        y: 282
+      positionAbsolute:
+        x: 382
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            model_name: Claude 4.5 Sonnet
+            temperature: 0.7
+          mode: chat
+          name: anthropic claude
+          provider: langgenius/bedrock/bedrock
+        prompt_template:
+        - edition_type: basic
+          id: 04b0e10d-3c3a-46c9-a161-45dbcd56cf2b
+          role: system
+          text: "You are a strict JSON extraction, canonical-title recovery, normalization,\
+            \ defensive legacy-search preparation, and prioritization engine for the\
+            \ Campus Co-Pilot Suite.\n\nCurrent system date: 2026-04-18.\n\nThe input\
+            \ will be raw text extracted from organizational slides or PDFs for a\
+            \ TUM module. The source text {{#1776469879403.text#}} is extracted from\
+            \ a slide deck and may contain massive duplication due to slide animations,\
+            \ repeated headers, repeated bullet builds, OCR noise, broken formatting,\
+            \ page numbers, and irrelevant lecture content.\n\nThe input text is primarily\
+            \ in German, but it may also contain English or a mixture of both. Treat\
+            \ German and English instructions as equivalent when their meaning is\
+            \ clearly the same.\n\nExamples of equivalent cues:\n- `required` = `pflicht`,\
+            \ `verpflichtend`, `obligatorisch`\n- `register` = `anmelden`, `einschreiben`\n\
+            - `join` = `beitreten`\n- `deadline` = `frist`, `abgabe`, `anmeldeschluss`\n\
+            - `recommended` = `empfohlen`\n- `immediately` = `sofort`, `unverzüglich`\n\
+            - `before first session` = `vor der ersten veranstaltung`, `vor der ersten\
+            \ vorlesung`, `vor dem ersten termin`\n- `exam` = `prüfung`, `klausur`\n\
+            - `exam registration` = `prüfungsanmeldung`, `klausuranmeldung`\n\nYour\
+            \ task is to extract only concrete student logistics and onboarding information\
+            \ and return exactly one JSON object with this top-level structure:\n\
+            - `thought_process`\n- `zulip_channels`\n- `artemis_courses`\n- `tumonline_courses`\n\
+            - `tumonline_exams`\n\nEach array must contain `logistical_item` objects\
+            \ with exactly these keys:\n- `name`\n- `search_query`\n- `date`\n- `priority`\n\
+            - `task_description`\n\nOutput rules:\n- Output exactly one raw JSON object.\n\
+            - The first character of your response must be `{`.\n- The last character\
+            \ of your response must be `}`.\n- Do not wrap the JSON in Markdown.\n\
+            - Do not use triple backticks.\n- Do not prepend or append any text.\n\
+            - Do not output explanations, notes, or conversational filler outside\
+            \ the JSON.\n- Do not output an empty object `{}`.\n- If no information\
+            \ is found, return the full empty template with empty arrays.\n\nField\
+            \ rules:\n- `thought_process`: short plain-text summary describing how\
+            \ you deduplicated the noisy slide text and what logistical items were\
+            \ identified.\n- `name`: human-readable extracted name of the Zulip channel,\
+            \ Artemis course, TUMonline course, or TUMonline exam.\n- `search_query`:\
+            \ required string. For TUMonline items, use the defensive legacy-search\
+            \ rules below. For non-TUMonline items, use the exact `name` unless the\
+            \ source explicitly supports a shorter lookup string.\n- `date`: normalized\
+            \ relevant date string if explicitly available, otherwise `null`.\n- `priority`:\
+            \ use `do_now` only when the item has an extracted date and is immediately\
+            \ actionable; otherwise use `schedule`.\n- `task_description`: short faithful\
+            \ description of what the student needs to check, submit, prepare, join,\
+            \ register for, or follow up on.\n\nCanonical title rules for TUMonline\
+            \ items:\n- Scan the full source for the canonical module or course title,\
+            \ especially title slides, first slides, agenda slides, and repeated headers.\n\
+            - If a full course title appears anywhere, it counts as explicit evidence\
+            \ for TUMonline extraction even if later TUMonline wording is generic.\n\
+            - Prefer the fullest explicit official title over abbreviations, shortened\
+            \ variants, or partial fragments.\n- If a title appears as `Full Name\
+            \ (ABBR)`, keep only `Full Name` for the TUMonline `name`.\n- If only\
+            \ an abbreviation is shown without the full title, omit the TUMonline\
+            \ item rather than guessing.\n- Do not invent titles.\n- Do not translate\
+            \ titles.\n\nSearch query rules for legacy TUMonline matching:\n- For\
+            \ every `logistical_item` that represents a TUMonline course or TUMonline\
+            \ exam, populate `search_query` defensively. This field is not a display\
+            \ title. It is a minimal search string used to generate a legacy TUMonline\
+            \ search URL.\n- If an explicit module code is present anywhere in the\
+            \ relevant source text for that item, return only that exact module code.\n\
+            - A module code has priority over every title variant. Do not combine\
+            \ the module code with course words.\n- If no explicit module code is\
+            \ present, build a minimal search query from the title by removing generic\
+            \ university and course-type words.\n- Remove generic terms such as `Grundlagenpraktikum`,\
+            \ `Praktikum`, `Vorlesung`, `Seminar`, `Übung`, `Tutorium`, `Kurs`, `Modul`,\
+            \ `Lehrveranstaltung`, `lecture`, `course`, `seminar`, `lab`, and similar\
+            \ boilerplate when they are not the unique identifying part.\n- Remove\
+            \ all punctuation from `search_query`, including colons, hyphens, slashes,\
+            \ commas, periods, and parentheses.\n- After removing generic terms and\
+            \ punctuation, keep the shortest distinctive phrase needed to find the\
+            \ item reliably in TUMonline.\n- Do not over-shorten meaningful titles.\
+            \ Preserve additional informative words when a single noun would become\
+            \ too broad or lossy.\n- Prefer shorter unique search strings over full\
+            \ verbatim titles, but keep as many meaningful words as needed for reliable\
+            \ matching.\n- Do not return filler words, semester labels, lecturer names,\
+            \ institute names, or long phrases unless they are required to preserve\
+            \ uniqueness.\n- Do not invent a module code or search phrase that is\
+            \ not explicitly supported by the source text.\n\nExamples for `search_query`:\n\
+            - `Grundlagenpraktikum: Rechnerarchitektur` -> `Rechnerarchitektur`\n\
+            - `Seminar Einführung in die Informatik` -> `Einführung in die Informatik`\n\
+            - `IN0005 Einführung in die Softwaretechnik (EIST)` -> `IN0005`\n- `Master\
+            \ Seminar: Human Centered Engineering` -> `Human Centered`\n\nPlatform-specific\
+            \ extraction rules:\n- Include Artemis courses only when the text clearly\
+            \ indicates students should join, enroll in, access, register for, or\
+            \ use them.\n- Include Zulip channels only when the text clearly indicates\
+            \ students should join, use, monitor, or follow them.\n- Include TUMonline\
+            \ courses and exams when the source provides enough explicit evidence\
+            \ for the item name, even if there is no explicit action sentence nearby.\n\
+            - Do not infer Artemis courses or Zulip channels from context alone.\n\
+            \nDeduplication rules:\n- Aggressively deduplicate repeated lines, repeated\
+            \ bullets, partial duplicates, animated slide fragments, OCR ghosts, headers,\
+            \ footers, page numbers, and broken line wraps.\n- If the same course,\
+            \ exam, channel, deadline, or action appears multiple times, return it\
+            \ only once.\n\nDate and priority rules:\n- Extract only explicit, actionable,\
+            \ time-bound dates.\n- Use ISO 8601 only when it can be normalized confidently\
+            \ from explicit text.\n- Prefer `YYYY-MM-DD` for date-only values.\n-\
+            \ Prefer `YYYY-MM-DDTHH:MM` when time is explicitly given.\n- If the date\
+            \ cannot be normalized without guessing, use the exact original date text.\n\
+            - If no explicit date is available, use `null`.\n- If `date` is `null`,\
+            \ `priority` must be `schedule`.\n- If `priority` is `do_now`, `date`\
+            \ must be a non-empty string.\n- Use `do_now` only for items with an extracted\
+            \ date that is immediately actionable.\n\nUse only information explicitly\
+            \ supported by the input. Prefer omission over guessing.\n\nRequired output\
+            \ template:\n{\n  \"thought_process\": \"\",\n  \"zulip_channels\": [],\n\
+            \  \"artemis_courses\": [],\n  \"tumonline_courses\": [],\n  \"tumonline_exams\"\
+            : []\n}\n/"
+        - id: 057f6a53-d883-4ac1-87d1-e641c9dc0d0a
+          role: user
+          text: 'Here is the extracted text to process: {{#1776469879403.text#}}//'
+        selected: false
+        structured_output:
+          schema:
+            $defs:
+              logistical_item:
+                additionalProperties: false
+                allOf:
+                - if:
+                    properties:
+                      date:
+                        type: 'null'
+                    required:
+                    - date
+                  then:
+                    properties:
+                      priority:
+                        const: schedule
+                - if:
+                    properties:
+                      priority:
+                        const: do_now
+                    required:
+                    - priority
+                  then:
+                    properties:
+                      date:
+                        minLength: 1
+                        type: string
+                properties:
+                  date:
+                    description: Extracted relevant date in normalized form if available,
+                      otherwise null.
+                    type:
+                    - string
+                    - 'null'
+                  name:
+                    description: Name of the Zulip channel, Artemis course, TUMonline
+                      course, or TUMonline exam.
+                    type: string
+                  priority:
+                    description: Use do_now only when the item has an extracted date
+                      and is immediately actionable.
+                    enum:
+                    - do_now
+                    - schedule
+                    type: string
+                  task_description:
+                    description: What the user needs to check, submit, prepare, or
+                      follow up on.
+                    type: string
+                required:
+                - name
+                - date
+                - priority
+                - task_description
+                type: object
+            $schema: https://json-schema.org/draft/2020-12/schema
+            additionalProperties: false
+            properties:
+              artemis_courses:
+                items:
+                  $ref: '#/$defs/logistical_item'
+                type: array
+              thought_process:
+                description: Short extraction summary describing deduplication and
+                  the main logistical items identified.
+                type: string
+              tumonline_courses:
+                items:
+                  $ref: '#/$defs/logistical_item'
+                type: array
+              tumonline_exams:
+                items:
+                  $ref: '#/$defs/logistical_item'
+                type: array
+              zulip_channels:
+                items:
+                  $ref: '#/$defs/logistical_item'
+                type: array
+            required:
+            - thought_process
+            - zulip_channels
+            - artemis_courses
+            - tumonline_courses
+            - tumonline_exams
+            type: object
+        structured_output_enabled: true
+        title: JSON Maker
+        type: llm
+        vision:
+          enabled: false
+      height: 88
+      id: '1776494502774'
+      position:
+        x: 642.3820909647952
+        y: 311.7411987513138
+      positionAbsolute:
+        x: 642.3820909647952
+        y: 311.7411987513138
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        code: "import json\nimport re\n\nimport requests\n\n\nZULIP_STREAMS_URL =\
+          \ \"https://zulip.cit.tum.de/api/v1/streams\"\nZULIP_SUBSCRIPTIONS_URL =\
+          \ \"https://zulip.cit.tum.de/api/v1/users/me/subscriptions\"\nREQUEST_TIMEOUT_SECONDS\
+          \ = 15\n\n\ndef normalize(name: str) -> str:\n    if name is None:\n   \
+          \     return \"\"\n\n    return re.sub(r\"[^a-z0-9]+\", \"\", str(name).lower())\n\
+          \n\ndef _clean_stream_name(raw_name) -> str:\n    if raw_name is None:\n\
+          \        return \"\"\n\n    return str(raw_name).strip().lstrip(\"#\").strip()\n\
+          \n\ndef _extract_original_name(channel):\n    if isinstance(channel, str):\n\
+          \        return channel\n\n    if isinstance(channel, dict):\n        return\
+          \ channel.get(\"name\")\n\n    return None\n\n\ndef _extract_stream_names(stream_map)\
+          \ -> list:\n    if isinstance(stream_map, dict):\n        names = []\n \
+          \       for value in stream_map.values():\n            if isinstance(value,\
+          \ list):\n                for item in value:\n                    if isinstance(item,\
+          \ str):\n                        names.append(item)\n        return names\n\
+          \n    if isinstance(stream_map, list):\n        return [item for item in\
+          \ stream_map if isinstance(item, str)]\n\n    return []\n\n\ndef _result_item(original_name:\
+          \ str, matched_real_name: str, status: str, message: str = \"\") -> dict:\n\
+          \    item = {\n        \"original_name\": original_name,\n        \"matched_real_name\"\
+          : matched_real_name,\n        \"status\": status,\n    }\n\n    if message:\n\
+          \        item[\"message\"] = message\n\n    return item\n\n\ndef _invalid_credentials_result(summary:\
+          \ dict) -> dict:\n    summary[\"status\"] = \"error\"\n    summary[\"errors\"\
+          ].append(\"Invalid Credentials\")\n    return _finalize_summary(summary)\n\
+          \n\ndef _finalize_summary(summary: dict) -> dict:\n    summary[\"subscribed\"\
+          ] = sorted(set(summary.get(\"subscribed\", [])))\n    summary[\"failed\"\
+          ] = sorted(set(summary.get(\"failed\", [])))\n    summary[\"raw_api_responses\"\
+          ] = [\n        response\n        for response in summary.get(\"raw_api_responses\"\
+          , [])\n        if response.get(\"request_type\") == \"subscribe\"\n    ]\n\
+          \    return {\"result\": json.dumps(summary)}\n\n\ndef main(zulip_api_key:\
+          \ str, zulip_email: str, zulip_channels: list) -> dict:\n    summary = {\n\
+          \        \"status\": \"complete\",\n        \"subscribed\": [],\n      \
+          \  \"failed\": [],\n        \"errors\": [],\n        \"results\": [],\n\
+          \        \"stream_count\": 0,\n        \"api_attempts\": [],\n        \"\
+          raw_api_responses\": [],\n    }\n\n    if not zulip_api_key or not zulip_email:\n\
+          \        return _invalid_credentials_result(summary)\n\n    if not isinstance(zulip_channels,\
+          \ list):\n        summary[\"status\"] = \"error\"\n        summary[\"errors\"\
+          ].append(\"zulip_channels must be a list\")\n        return _finalize_summary(summary)\n\
+          \n    session = requests.Session()\n    session.auth = (zulip_email, zulip_api_key)\n\
+          \n    print(\"Fetching available Zulip streams before matching requested\
+          \ channels\")\n\n    try:\n        streams_response = session.get(\n   \
+          \         ZULIP_STREAMS_URL,\n            timeout=REQUEST_TIMEOUT_SECONDS,\n\
+          \        )\n    except requests.exceptions.RequestException as exc:\n  \
+          \      summary[\"status\"] = \"error\"\n        summary[\"errors\"].append(\"\
+          Network error during stream fetch: {0}\".format(str(exc)))\n        summary[\"\
+          api_attempts\"].append(\n            {\n                \"request_type\"\
+          : \"fetch_streams\",\n                \"network_error\": str(exc),\n   \
+          \         }\n        )\n        return _finalize_summary(summary)\n\n  \
+          \  print(\"Fetch streams response status: {0}\".format(streams_response.status_code))\n\
+          \    summary[\"api_attempts\"].append(\n        {\n            \"request_type\"\
+          : \"fetch_streams\",\n            \"status_code\": streams_response.status_code,\n\
+          \        }\n    )\n\n    if streams_response.status_code == 401:\n     \
+          \   return _invalid_credentials_result(summary)\n\n    try:\n        streams_data\
+          \ = streams_response.json()\n    except ValueError:\n        streams_data\
+          \ = {\"result\": \"error\", \"msg\": streams_response.text}\n\n    if streams_data.get(\"\
+          result\") != \"success\":\n        summary[\"status\"] = \"error\"\n   \
+          \     summary[\"errors\"].append(\n            \"Failed to fetch available\
+          \ streams: {0}\".format(\n                streams_data.get(\"msg\") or \"\
+          Unknown API error\"\n            )\n        )\n        return _finalize_summary(summary)\n\
+          \n    available_stream_names = []\n    normalized_stream_map = {}\n\n  \
+          \  for stream in streams_data.get(\"streams\", []):\n        if not isinstance(stream,\
+          \ dict):\n            continue\n\n        real_name = stream.get(\"name\"\
+          )\n        if not isinstance(real_name, str) or not real_name:\n       \
+          \     continue\n\n        available_stream_names.append(real_name)\n   \
+          \     normalized_name = normalize(real_name)\n        if not normalized_name:\n\
+          \            continue\n\n        if normalized_name not in normalized_stream_map:\n\
+          \            normalized_stream_map[normalized_name] = []\n        normalized_stream_map[normalized_name].append(real_name)\n\
+          \n    summary[\"stream_count\"] = len(available_stream_names)\n    summary[\"\
+          api_attempts\"][-1][\"stream_count\"] = summary[\"stream_count\"]\n    print(\"\
+          Available stream count fetched: {0}\".format(summary[\"stream_count\"]))\n\
+          \n    matched_real_names = []\n    matched_real_name_set = set()\n    pending_matches\
+          \ = []\n\n    for channel in zulip_channels:\n        original_name_value\
+          \ = _extract_original_name(channel)\n        original_name = \"\" if original_name_value\
+          \ is None else str(original_name_value)\n        original_name_display =\
+          \ original_name or str(channel)\n        cleaned_name = _clean_stream_name(original_name_value)\n\
+          \n        if not cleaned_name:\n            message = 'Skipping channel\
+          \ entry without a valid name: \"{0}\"'.format(\n                str(channel)\n\
+          \            )\n            summary[\"errors\"].append(message)\n      \
+          \      summary[\"failed\"].append(str(channel))\n            summary[\"\
+          results\"].append(\n                _result_item(original_name_display,\
+          \ \"\", \"invalid_input\", message)\n            )\n            continue\n\
+          \n        normalized_requested_name = normalize(cleaned_name)\n        matching_real_names\
+          \ = normalized_stream_map.get(normalized_requested_name, [])\n\n       \
+          \ print(\n            'Matching requested stream original=\"{0}\" cleaned=\"\
+          {1}\" normalized=\"{2}\" against {3}'.format(\n                original_name,\n\
+          \                cleaned_name,\n                normalized_requested_name,\n\
+          \                matching_real_names,\n            )\n        )\n\n    \
+          \    if len(matching_real_names) == 1:\n            matched_real_name =\
+          \ matching_real_names[0]\n            pending_matches.append(\n        \
+          \        {\n                    \"original_name\": original_name_display,\n\
+          \                    \"matched_real_name\": matched_real_name,\n       \
+          \         }\n            )\n            if matched_real_name not in matched_real_name_set:\n\
+          \                matched_real_name_set.add(matched_real_name)\n        \
+          \        matched_real_names.append(matched_real_name)\n            continue\n\
+          \n        if len(matching_real_names) > 1:\n            message = 'Ambiguous\
+          \ normalized match for \"{0}\": {1}'.format(\n                cleaned_name,\
+          \ matching_real_names\n            )\n            summary[\"errors\"].append(message)\n\
+          \            summary[\"failed\"].append(original_name_display)\n       \
+          \     summary[\"results\"].append(\n                _result_item(original_name_display,\
+          \ \"\", \"ambiguous_match\", message)\n            )\n            continue\n\
+          \n        message = 'No existing Zulip stream matched \"{0}\" after normalization'.format(\n\
+          \            cleaned_name\n        )\n        summary[\"errors\"].append(message)\n\
+          \        summary[\"failed\"].append(original_name_display)\n        summary[\"\
+          results\"].append(\n            _result_item(original_name_display, \"\"\
+          , \"no_match\", message)\n        )\n\n    if not matched_real_names:\n\
+          \        return _finalize_summary(summary)\n\n    subscribe_payload = {\n\
+          \        \"subscriptions\": json.dumps([{\"name\": name} for name in matched_real_names]),\n\
+          \        \"authorization_errors_fatal\": \"false\",\n    }\n\n    print(\"\
+          Prepared matched real stream names: {0}\".format(matched_real_names))\n\
+          \    print(\"Subscribe request data payload: {0}\".format(subscribe_payload))\n\
+          \n    try:\n        subscribe_response = session.post(\n            ZULIP_SUBSCRIPTIONS_URL,\n\
+          \            data=subscribe_payload,\n            timeout=REQUEST_TIMEOUT_SECONDS,\n\
+          \        )\n    except requests.exceptions.RequestException as exc:\n  \
+          \      summary[\"status\"] = \"error\"\n        summary[\"errors\"].append(\n\
+          \            \"Network error during subscribe request: {0}\".format(str(exc))\n\
+          \        )\n        summary[\"api_attempts\"].append(\n            {\n \
+          \               \"request_type\": \"subscribe\",\n                \"requested_count\"\
+          : len(matched_real_names),\n                \"network_error\": str(exc),\n\
+          \            }\n        )\n        summary[\"raw_api_responses\"].append(\n\
+          \            {\n                \"request_type\": \"subscribe\",\n     \
+          \           \"request_data\": subscribe_payload,\n                \"network_error\"\
+          : str(exc),\n            }\n        )\n        for match in pending_matches:\n\
+          \            summary[\"failed\"].append(match[\"original_name\"])\n    \
+          \        summary[\"results\"].append(\n                _result_item(\n \
+          \                   match[\"original_name\"],\n                    match[\"\
+          matched_real_name\"],\n                    \"network_error\",\n        \
+          \            str(exc),\n                )\n            )\n        return\
+          \ _finalize_summary(summary)\n\n    print(\"Subscribe response status: {0}\"\
+          .format(subscribe_response.status_code))\n    print(\"Subscribe response\
+          \ text: {0}\".format(subscribe_response.text))\n\n    summary[\"raw_api_responses\"\
+          ].append(\n        {\n            \"request_type\": \"subscribe\",\n   \
+          \         \"request_data\": subscribe_payload,\n            \"status_code\"\
+          : subscribe_response.status_code,\n            \"response_text\": subscribe_response.text,\n\
+          \        }\n    )\n    summary[\"api_attempts\"].append(\n        {\n  \
+          \          \"request_type\": \"subscribe\",\n            \"status_code\"\
+          : subscribe_response.status_code,\n            \"requested_count\": len(matched_real_names),\n\
+          \        }\n    )\n\n    if subscribe_response.status_code == 401:\n   \
+          \     return _invalid_credentials_result(summary)\n\n    try:\n        subscribe_data\
+          \ = subscribe_response.json()\n    except ValueError:\n        subscribe_data\
+          \ = {\"result\": \"error\", \"msg\": subscribe_response.text}\n\n    summary[\"\
+          raw_api_responses\"][-1][\"parsed_response\"] = subscribe_data\n\n    response_subscribed\
+          \ = _extract_stream_names(subscribe_data.get(\"subscribed\"))\n    response_already_subscribed\
+          \ = _extract_stream_names(\n        subscribe_data.get(\"already_subscribed\"\
+          )\n    )\n    response_unauthorized = _extract_stream_names(subscribe_data.get(\"\
+          unauthorized\"))\n\n    print(\"Response subscribed names: {0}\".format(response_subscribed))\n\
+          \    print(\"Response already_subscribed names: {0}\".format(response_already_subscribed))\n\
+          \    print(\"Response unauthorized names: {0}\".format(response_unauthorized))\n\
+          \n    summary[\"raw_api_responses\"][-1][\"response_subscribed_names\"]\
+          \ = response_subscribed\n    summary[\"raw_api_responses\"][-1][\n     \
+          \   \"response_already_subscribed_names\"\n    ] = response_already_subscribed\n\
+          \    summary[\"raw_api_responses\"][-1][\"response_unauthorized_names\"\
+          ] = response_unauthorized\n\n    if subscribe_data.get(\"result\") != \"\
+          success\":\n        summary[\"status\"] = \"error\"\n        message = subscribe_data.get(\"\
+          msg\") or \"Unknown API error\"\n        summary[\"errors\"].append(\"Subscribe\
+          \ request failed: {0}\".format(message))\n        for match in pending_matches:\n\
+          \            summary[\"failed\"].append(match[\"original_name\"])\n    \
+          \        summary[\"results\"].append(\n                _result_item(\n \
+          \                   match[\"original_name\"],\n                    match[\"\
+          matched_real_name\"],\n                    \"failed\",\n               \
+          \     message,\n                )\n            )\n        return _finalize_summary(summary)\n\
+          \n    try:\n        verify_response = session.get(\n            ZULIP_SUBSCRIPTIONS_URL,\n\
+          \            timeout=REQUEST_TIMEOUT_SECONDS,\n        )\n    except requests.exceptions.RequestException\
+          \ as exc:\n        summary[\"status\"] = \"error\"\n        summary[\"errors\"\
+          ].append(\n            \"Network error during verification request: {0}\"\
+          .format(str(exc))\n        )\n        summary[\"api_attempts\"].append(\n\
+          \            {\n                \"request_type\": \"verify_get_subscriptions\"\
+          ,\n                \"network_error\": str(exc),\n            }\n       \
+          \ )\n        for match in pending_matches:\n            summary[\"failed\"\
+          ].append(match[\"original_name\"])\n            summary[\"results\"].append(\n\
+          \                _result_item(\n                    match[\"original_name\"\
+          ],\n                    match[\"matched_real_name\"],\n                \
+          \    \"verification_error\",\n                    str(exc),\n          \
+          \      )\n            )\n        return _finalize_summary(summary)\n\n \
+          \   print(\"Verify response status: {0}\".format(verify_response.status_code))\n\
+          \    summary[\"api_attempts\"].append(\n        {\n            \"request_type\"\
+          : \"verify_get_subscriptions\",\n            \"status_code\": verify_response.status_code,\n\
+          \        }\n    )\n\n    if verify_response.status_code == 401:\n      \
+          \  return _invalid_credentials_result(summary)\n\n    try:\n        verify_data\
+          \ = verify_response.json()\n    except ValueError:\n        verify_data\
+          \ = {\"result\": \"error\", \"msg\": verify_response.text}\n\n    if verify_data.get(\"\
+          result\") != \"success\":\n        summary[\"status\"] = \"error\"\n   \
+          \     message = verify_data.get(\"msg\") or \"Unknown API error\"\n    \
+          \    summary[\"errors\"].append(\"Verification request failed: {0}\".format(message))\n\
+          \        for match in pending_matches:\n            summary[\"failed\"].append(match[\"\
+          original_name\"])\n            summary[\"results\"].append(\n          \
+          \      _result_item(\n                    match[\"original_name\"],\n  \
+          \                  match[\"matched_real_name\"],\n                    \"\
+          verification_failed\",\n                    message,\n                )\n\
+          \            )\n        return _finalize_summary(summary)\n\n    verified_subscription_names\
+          \ = []\n    for subscription in verify_data.get(\"subscriptions\", []):\n\
+          \        if isinstance(subscription, dict) and isinstance(subscription.get(\"\
+          name\"), str):\n            verified_subscription_names.append(subscription[\"\
+          name\"])\n\n    print(\"Verified subscription count from GET: {0}\".format(len(verified_subscription_names)))\n\
+          \    summary[\"api_attempts\"][-1][\"verified_count\"] = len(verified_subscription_names)\n\
+          \n    verified_subscription_set = set(verified_subscription_names)\n   \
+          \ subscribed_real_names = []\n    failed_original_names = []\n\n    for\
+          \ match in pending_matches:\n        original_name = match[\"original_name\"\
+          ]\n        matched_real_name = match[\"matched_real_name\"]\n\n        if\
+          \ matched_real_name in verified_subscription_set:\n            subscribed_real_names.append(matched_real_name)\n\
+          \            summary[\"results\"].append(\n                _result_item(original_name,\
+          \ matched_real_name, \"subscribed\")\n            )\n            continue\n\
+          \n        failed_original_names.append(original_name)\n\n        if matched_real_name\
+          \ in response_unauthorized:\n            message = 'Not authorized to subscribe\
+          \ to \"{0}\"'.format(matched_real_name)\n            summary[\"errors\"\
+          ].append(message)\n            summary[\"results\"].append(\n          \
+          \      _result_item(original_name, matched_real_name, \"unauthorized\",\
+          \ message)\n            )\n            continue\n\n        message = 'Verification\
+          \ GET did not find \"{0}\" in current subscriptions'.format(\n         \
+          \   matched_real_name\n        )\n        summary[\"errors\"].append(message)\n\
+          \        summary[\"results\"].append(\n            _result_item(original_name,\
+          \ matched_real_name, \"failed\", message)\n        )\n\n    summary[\"subscribed\"\
+          ] = subscribed_real_names\n    summary[\"failed\"] = summary[\"failed\"\
+          ] + failed_original_names\n\n    return _finalize_summary(summary)\n"
+        code_language: python3
+        outputs:
+          result:
+            children: null
+            type: string
+        selected: false
+        title: Zulip API Code
+        type: code
+        variables:
+        - value_selector:
+          - '1776469800336'
+          - zulip_email
+          value_type: string
+          variable: zulip_email
+        - value_selector:
+          - '1776469800336'
+          - zulip_api_key
+          value_type: string
+          variable: zulip_api_key
+        - value_selector:
+          - '1776494502774'
+          - structured_output
+          - zulip_channels
+          value_type: object
+          variable: zulip_channels
+      height: 52
+      id: '1776511763423'
+      position:
+        x: 1084.5239031716321
+        y: 303
+      positionAbsolute:
+        x: 1084.5239031716321
+        y: 303
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        code: "import json\nfrom urllib.parse import quote\n\n\nTUMONLINE_SEARCH_URL\
+          \ = (\n    \"https://campus.tum.de/tumonline/ee/ui/ca2/app/desktop/\"\n\
+          \    \"#/slc.tm.cp/student/courses?$ctx=&$skip=0&objTermId=206&orgId=1&q={0}\"\
+          \n)\n\n\ndef _extract_course_name(course) -> str:\n    if isinstance(course,\
+          \ str):\n        return course\n\n    if isinstance(course, dict):\n   \
+          \     name = course.get(\"name\", \"\")\n        if name is None:\n    \
+          \        return \"\"\n        return str(name)\n\n    return \"\"\n\n\n\
+          def _extract_priority(course) -> str:\n    if isinstance(course, str):\n\
+          \        return \"\"\n\n    if isinstance(course, dict):\n        priority\
+          \ = course.get(\"priority\", \"\")\n        if priority is None:\n     \
+          \       return \"\"\n        return str(priority)\n\n    return \"\"\n\n\
+          \ndef _encode_course_query(course_name: str) -> str:\n    # Start with a\
+          \ fully encoded query, then decode only multibyte UTF-8\n    # sequences\
+          \ so letters like \"ü\" remain readable while reserved\n    # characters\
+          \ such as spaces stay safely encoded as \"%20\".\n    encoded_name = quote(course_name,\
+          \ safe=\"\")\n    parts = []\n    index = 0\n\n    while index < len(encoded_name):\n\
+          \        if encoded_name[index] != \"%\":\n            parts.append(encoded_name[index])\n\
+          \            index += 1\n            continue\n\n        if index + 2 >=\
+          \ len(encoded_name):\n            parts.append(encoded_name[index:])\n \
+          \           break\n\n        first_byte = int(encoded_name[index + 1 : index\
+          \ + 3], 16)\n\n        if first_byte < 0xC2 or first_byte > 0xF4:\n    \
+          \        parts.append(encoded_name[index : index + 3])\n            index\
+          \ += 3\n            continue\n\n        if first_byte < 0xE0:\n        \
+          \    expected_length = 2\n        elif first_byte < 0xF0:\n            expected_length\
+          \ = 3\n        else:\n            expected_length = 4\n\n        byte_values\
+          \ = [first_byte]\n        cursor = index + 3\n        is_complete = True\n\
+          \n        for _ in range(expected_length - 1):\n            if cursor +\
+          \ 2 >= len(encoded_name) or encoded_name[cursor] != \"%\":\n           \
+          \     is_complete = False\n                break\n\n            next_byte\
+          \ = int(encoded_name[cursor + 1 : cursor + 3], 16)\n            if next_byte\
+          \ < 0x80 or next_byte > 0xBF:\n                is_complete = False\n   \
+          \             break\n\n            byte_values.append(next_byte)\n     \
+          \       cursor += 3\n\n        if not is_complete:\n            parts.append(encoded_name[index\
+          \ : index + 3])\n            index += 3\n            continue\n\n      \
+          \  try:\n            parts.append(bytes(byte_values).decode(\"utf-8\"))\n\
+          \        except UnicodeDecodeError:\n            parts.append(encoded_name[index\
+          \ : index + 3])\n            index += 3\n            continue\n\n      \
+          \  index = cursor\n\n    return \"\".join(parts)\n\n\ndef main(tumonline_courses:\
+          \ list) -> dict:\n    payload = {\"links\": []}\n\n    if not isinstance(tumonline_courses,\
+          \ list):\n        return {\"result\": json.dumps(payload, ensure_ascii=False)}\n\
+          \n    for course in tumonline_courses:\n        course_name = _extract_course_name(course)\n\
+          \n        if not course_name:\n            continue\n\n        priority\
+          \ = _extract_priority(course)\n        encoded_name = _encode_course_query(course_name)\n\
+          \        search_url = TUMONLINE_SEARCH_URL.format(encoded_name)\n\n    \
+          \    payload[\"links\"].append(\n            {\n                \"course_name\"\
+          : course_name,\n                \"priority\": priority,\n              \
+          \  \"search_url\": search_url,\n            }\n        )\n\n    return {\"\
+          result\": json.dumps(payload, ensure_ascii=False)}"
+        code_language: python3
+        outputs:
+          result:
+            children: null
+            type: string
+        selected: false
+        title: TUMONLINE COURSE
+        type: code
+        variables:
+        - value_selector:
+          - '1776494502774'
+          - structured_output
+          - tumonline_courses
+          value_type: object
+          variable: tumonline_courses
+      height: 52
+      id: '1776517881230'
+      position:
+        x: 1084.5239031716321
+        y: 529.3300108815002
+      positionAbsolute:
+        x: 1084.5239031716321
+        y: 529.3300108815002
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        code: "import json\nfrom datetime import date\nfrom urllib.parse import quote\n\
+          \n\nTUMONLINE_EXAM_SEARCH_URL = (\n    \"https://campus.tum.de/tumonline/ee/ui/ca2/app/desktop/\"\
+          \n    \"#/slc.xm.exr/exExamRegistration?$ctx=lang=DE&\"\n    \"$filter=curriculumVersionId-eq=-1;\"\
+          \n    \"exExamDateFrom-gte={0};\"\n    \"exSemesterId-eq=-1;\"\n    \"q-likeI={1}&\"\
+          \n    \"$orderBy=exExamDate=ascnl&$skip=0&$top=20&orgId=-1\"\n)\n\n\ndef\
+          \ _extract_exam_name(exam) -> str:\n    if isinstance(exam, str):\n    \
+          \    return exam\n\n    if isinstance(exam, dict):\n        name = exam.get(\"\
+          name\", \"\")\n        if name is None:\n            return \"\"\n     \
+          \   return str(name)\n\n    return \"\"\n\n\ndef _extract_exam_query(exam)\
+          \ -> str:\n    if isinstance(exam, str):\n        return exam\n\n    if\
+          \ isinstance(exam, dict):\n        name = exam.get(\"name\", \"\")\n   \
+          \     if name is not None and str(name):\n            return str(name)\n\
+          \n        search_query = exam.get(\"search_query\", \"\")\n        if search_query\
+          \ is None:\n            return \"\"\n        return str(search_query)\n\n\
+          \    return \"\"\n\n\ndef _extract_priority(exam) -> str:\n    if isinstance(exam,\
+          \ str):\n        return \"\"\n\n    if isinstance(exam, dict):\n       \
+          \ priority = exam.get(\"priority\", \"\")\n        if priority is None:\n\
+          \            return \"\"\n        return str(priority)\n\n    return \"\"\
+          \n\n\ndef _encode_exam_query(exam_query: str) -> str:\n    # Start with\
+          \ a fully encoded query, then decode only multibyte UTF-8\n    # sequences\
+          \ so letters like \"ü\" remain readable while reserved\n    # characters\
+          \ such as spaces stay safely encoded as \"%20\".\n    encoded_query = quote(exam_query,\
+          \ safe=\"\")\n    parts = []\n    index = 0\n\n    while index < len(encoded_query):\n\
+          \        if encoded_query[index] != \"%\":\n            parts.append(encoded_query[index])\n\
+          \            index += 1\n            continue\n\n        if index + 2 >=\
+          \ len(encoded_query):\n            parts.append(encoded_query[index:])\n\
+          \            break\n\n        first_byte = int(encoded_query[index + 1 :\
+          \ index + 3], 16)\n\n        if first_byte < 0xC2 or first_byte > 0xF4:\n\
+          \            parts.append(encoded_query[index : index + 3])\n          \
+          \  index += 3\n            continue\n\n        if first_byte < 0xE0:\n \
+          \           expected_length = 2\n        elif first_byte < 0xF0:\n     \
+          \       expected_length = 3\n        else:\n            expected_length\
+          \ = 4\n\n        byte_values = [first_byte]\n        cursor = index + 3\n\
+          \        is_complete = True\n\n        for _ in range(expected_length -\
+          \ 1):\n            if cursor + 2 >= len(encoded_query) or encoded_query[cursor]\
+          \ != \"%\":\n                is_complete = False\n                break\n\
+          \n            next_byte = int(encoded_query[cursor + 1 : cursor + 3], 16)\n\
+          \            if next_byte < 0x80 or next_byte > 0xBF:\n                is_complete\
+          \ = False\n                break\n\n            byte_values.append(next_byte)\n\
+          \            cursor += 3\n\n        if not is_complete:\n            parts.append(encoded_query[index\
+          \ : index + 3])\n            index += 3\n            continue\n\n      \
+          \  try:\n            parts.append(bytes(byte_values).decode(\"utf-8\"))\n\
+          \        except UnicodeDecodeError:\n            parts.append(encoded_query[index\
+          \ : index + 3])\n            index += 3\n            continue\n\n      \
+          \  index = cursor\n\n    return \"\".join(parts)\n\n\ndef main(tumonline_exams:\
+          \ list) -> dict:\n    payload = {\"links\": []}\n\n    if not isinstance(tumonline_exams,\
+          \ list):\n        return {\"result\": json.dumps(payload, ensure_ascii=False)}\n\
+          \n    exam_date_from = date.today().isoformat()\n\n    for exam in tumonline_exams:\n\
+          \        exam_name = _extract_exam_name(exam)\n        exam_query = _extract_exam_query(exam)\n\
+          \n        if not exam_name or not exam_query:\n            continue\n\n\
+          \        priority = _extract_priority(exam)\n        encoded_query = _encode_exam_query(exam_query)\n\
+          \        search_url = TUMONLINE_EXAM_SEARCH_URL.format(exam_date_from, encoded_query)\n\
+          \n        payload[\"links\"].append(\n            {\n                \"\
+          exam_name\": exam_name,\n                \"priority\": priority,\n     \
+          \           \"search_url\": search_url,\n            }\n        )\n\n  \
+          \  return {\"result\": json.dumps(payload, ensure_ascii=False)}\n"
+        code_language: python3
+        isInIteration: false
+        isInLoop: false
+        outputs:
+          result:
+            children: null
+            type: string
+        selected: false
+        title: TUMONLINE EXAM
+        type: code
+        variables:
+        - value_selector:
+          - '1776494502774'
+          - structured_output
+          - tumonline_courses
+          value_type: object
+          variable: tumonline_exams
+      height: 52
+      id: '17765239437820'
+      position:
+        x: 1099.925070946319
+        y: 674.784605858423
+      positionAbsolute:
+        x: 1099.925070946319
+        y: 674.784605858423
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        code: "import json\n\n\nARTEMIS_ENROLL_URL = \"https://artemis.tum.de/courses/enroll\"\
+          \n\n\ndef _extract_course_name(course) -> str:\n    if isinstance(course,\
+          \ str):\n        return course\n\n    if isinstance(course, dict):\n   \
+          \     name = course.get(\"name\", \"\")\n        if name is None:\n    \
+          \        return \"\"\n        return str(name)\n\n    return \"\"\n\n\n\
+          def _extract_priority(course) -> str:\n    if isinstance(course, str):\n\
+          \        return \"\"\n\n    if isinstance(course, dict):\n        priority\
+          \ = course.get(\"priority\", \"\")\n        if priority is None:\n     \
+          \       return \"\"\n        return str(priority)\n\n    return \"\"\n\n\
+          \ndef main(artemis_courses: list) -> dict:\n    payload = {\"links\": []}\n\
+          \n    if not isinstance(artemis_courses, list):\n        return {\"result\"\
+          : json.dumps(payload, ensure_ascii=False)}\n\n    for course in artemis_courses:\n\
+          \        course_name = _extract_course_name(course)\n\n        if not course_name:\n\
+          \            continue\n\n        priority = _extract_priority(course)\n\n\
+          \        payload[\"links\"].append(\n            {\n                \"course_name\"\
+          : course_name,\n                \"priority\": priority,\n              \
+          \  \"search_url\": ARTEMIS_ENROLL_URL,\n            }\n        )\n\n   \
+          \ return {\"result\": json.dumps(payload, ensure_ascii=False)}"
+        code_language: python3
+        outputs:
+          result:
+            children: null
+            type: string
+        selected: false
+        title: ARTEMIS LINK
+        type: code
+        variables:
+        - value_selector:
+          - '1776494502774'
+          - structured_output
+          - artemis_courses
+          value_type: object
+          variable: artemis_courses
+      height: 52
+      id: '1776526351248'
+      position:
+        x: 1086.2027738664433
+        y: 800.5723290906166
+      positionAbsolute:
+        x: 1086.2027738664433
+        y: 800.5723290906166
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: anthropic claude
+          provider: langgenius/bedrock/bedrock
+        prompt_template:
+        - edition_type: basic
+          id: e52c14a9-005a-4793-91e8-abb259523b11
+          role: system
+          text: "You are a backend data parsing assistant. Your task is to take raw\
+            \ JSON data containing university information and transform it into a\
+            \ clean, standardized array of \"Task\" objects for a to-do list.\n\n\
+            The data will contain items like Artemis courses, TUMonline courses, and\
+            \ TUMonline exams.\n\nCRITICAL INSTRUCTIONS:\n1. Output ONLY valid JSON.\
+            \ Do not include any conversational filler, markdown formatting (like\
+            \ ```json), or explanations.\n2. Structure your output as an array of\
+            \ objects.\n3. Use the following schema for every task object:\n\n[\n\
+            \  {\n    \"taskName\": \"Name of the course or exam\",\n    \"source\"\
+            : \"Artemis\" or \"TUMonline\",\n    \"type\": \"Course\" or \"Exam\"\
+            ,\n    \"deadline\": \"Extract the date if available, otherwise null\"\
+            ,\n    \"status\": \"pending\"\n  }\n]"
+        - id: 58e8aa2a-6dd4-4422-b3be-ed7d70f5d083
+          role: user
+          text: "Transform the following raw JSON data into the requested Task object\
+            \ array. \n\nRaw Data:\n{{#1776494502774.structured_output#}}"
+        selected: false
+        structured_output:
+          schema:
+            additionalProperties: false
+            properties:
+              Task:
+                additionalProperties: false
+                properties:
+                  Importance:
+                    type: string
+                required:
+                - Importance
+                type: object
+            required:
+            - Task
+            type: object
+        structured_output_enabled: true
+        title: todolist
+        type: llm
+        vision:
+          enabled: false
+      height: 88
+      id: '1776526688964'
+      position:
+        x: 1054.4066030091597
+        y: 152.48474945792134
+      positionAbsolute:
+        x: 1054.4066030091597
+        y: 152.48474945792134
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        code: "import json\n\n\nSKIPPED_MESSAGE = \"Action skipped\"\n\n\ndef _normalize_optional_value(value,\
+          \ default=SKIPPED_MESSAGE):\n    if value is None:\n        return default\n\
+          \n    if isinstance(value, str):\n        trimmed = value.strip()\n    \
+          \    if not trimmed:\n            return default\n        if trimmed.lower()\
+          \ in {\"null\", \"none\"}:\n            return default\n        return trimmed\n\
+          \n    return value\n\n\ndef _parse_json_string(value):\n    if value is\
+          \ None:\n        return None\n\n    if isinstance(value, str):\n       \
+          \ trimmed = value.strip()\n        if not trimmed or trimmed.lower() in\
+          \ {\"null\", \"none\"}:\n            return None\n\n        try:\n     \
+          \       return json.loads(trimmed)\n        except json.JSONDecodeError:\n\
+          \            return value\n\n    return value\n\n\ndef _parse_zulip_status(value):\n\
+          \    normalized = _normalize_optional_value(value)\n    if normalized ==\
+          \ SKIPPED_MESSAGE:\n        return normalized\n\n    if isinstance(normalized,\
+          \ bool):\n        return normalized\n\n    if isinstance(normalized, (dict,\
+          \ list, int, float)):\n        return normalized\n\n    if isinstance(normalized,\
+          \ str):\n        lowered = normalized.lower()\n        if lowered == \"\
+          true\":\n            return True\n        if lowered == \"false\":\n   \
+          \         return False\n\n        try:\n            return json.loads(normalized)\n\
+          \        except json.JSONDecodeError:\n            return normalized\n\n\
+          \    return normalized\n\n\ndef main(\n    base_json,\n    zulip_status=None,\n\
+          \    artemis_link=None,\n    tumonline_course_link=None,\n    tumonline_exam_link=None,\n\
+          ):\n    execution_results = {\n        \"zulip_status\": _parse_zulip_status(zulip_status),\n\
+          \        \"artemis_link\": _parse_json_string(artemis_link),\n        \"\
+          tumonline_course_link\": _parse_json_string(tumonline_course_link),\n  \
+          \      \"tumonline_exam_link\": _parse_json_string(tumonline_exam_link),\n\
+          \    }\n\n    try:\n        if isinstance(base_json, dict):\n          \
+          \  merged_dict = base_json\n        elif isinstance(base_json, str):\n \
+          \           merged_dict = json.loads(base_json)\n        else:\n       \
+          \     raise ValueError(\"base_json must be a dict or JSON string\")\n\n\
+          \        if not isinstance(merged_dict, dict):\n            raise json.JSONDecodeError(\n\
+          \                \"base_json must decode to a JSON object\",\n         \
+          \       base_json if isinstance(base_json, str) else str(base_json),\n \
+          \               0,\n            )\n        merged_dict[\"execution_results\"\
+          ] = execution_results\n    except (json.JSONDecodeError, ValueError) as\
+          \ exc:\n        merged_dict = {\n            \"success\": False,\n     \
+          \       \"error\": {\n                \"code\": \"INVALID_BASE_JSON\",\n\
+          \                \"message\": \"The base_json input could not be parsed.\"\
+          ,\n                \"details\": str(exc),\n            },\n            \"\
+          execution_results\": execution_results,\n        }\n\n    return {\"final_payload\"\
+          : json.dumps(merged_dict)}\n"
+        code_language: python3
+        outputs:
+          final_payload:
+            children: null
+            type: string
+        selected: false
+        title: payload aggregator
+        type: code
+        variables:
+        - value_selector:
+          - '1776526688964'
+          - structured_output
+          value_type: object
+          variable: base_json
+        - value_selector:
+          - '1776511763423'
+          - result
+          value_type: string
+          variable: zulip_status
+        - value_selector:
+          - '1776517881230'
+          - result
+          value_type: string
+          variable: tumonline_course_link
+        - value_selector:
+          - '17765239437820'
+          - result
+          value_type: string
+          variable: tumonline_exam_link
+        - value_selector:
+          - '1776526351248'
+          - result
+          value_type: string
+          variable: artemis_link
+      height: 52
+      id: '1776534235472'
+      position:
+        x: 1430.573095725054
+        y: 370.14621516240567
+      positionAbsolute:
+        x: 1430.573095725054
+        y: 370.14621516240567
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        outputs:
+        - value_selector:
+          - '1776534235472'
+          - final_payload
+          value_type: string
+          variable: result
+        selected: false
+        title: Output
+        type: end
+      height: 88
+      id: '1776534581321'
+      position:
+        x: 1757.0478220847567
+        y: 365.2244856192945
+      positionAbsolute:
+        x: 1757.0478220847567
+        y: 365.2244856192945
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    viewport:
+      x: -461.8677472582794
+      y: 166.8167282654347
+      zoom: 0.47329345760300057
+  rag_pipeline_variables: []
