@@ -93,8 +93,54 @@ function buildArtemisNavigationUrl(name: string) {
   return `https://artemis.ase.in.tum.de/courses/${nameSlug}`;
 }
 
+const TUMONLINE_GRUNDLAGENPRAKTIKUM_PREFIX =
+  /^Grundlagenpraktikum(?:\s*:\s*|\s+)/u;
+
+function normalizeTumonlineSearchName(name: string) {
+  return name.replace(
+    TUMONLINE_GRUNDLAGENPRAKTIKUM_PREFIX,
+    "Grundlagenpraktikum: ",
+  );
+}
+
+function normalizeTumonlineSearchUrl(searchUrl: string, name: string) {
+  if (
+    !searchUrl.includes("/student/courses") &&
+    !searchUrl.includes("/exExamRegistration")
+  ) {
+    return searchUrl;
+  }
+
+  const encodedName = encodeURIComponent(normalizeTumonlineSearchName(name));
+
+  return searchUrl
+    .replace(
+      /([?&;])(q(?:-likeI)?|search)=[^&#;]*/gu,
+      (_match, separator: string, queryKey: string) =>
+        `${separator}${queryKey}=${encodedName}`,
+    );
+}
+
 function buildTumonlineNavigationUrl(name: string) {
-  return `https://campus.tum.de/tumonline/ee/ui/ca2/app/desktop/#/slc.tm.cp/student/courses?$ctx=design=ca2;header=max&filter=stterm=24S;search=${encodeURIComponent(name)}`;
+  const normalizedName = normalizeTumonlineSearchName(name);
+
+  return `https://campus.tum.de/tumonline/ee/ui/ca2/app/desktop/#/slc.tm.cp/student/courses?$ctx=design=ca2;header=max&filter=stterm=24S;search=${encodeURIComponent(normalizedName)}`;
+}
+
+function resolveTumonlineNavigationUrl(name: string, searchUrl?: string) {
+  const fallbackUrl = buildTumonlineNavigationUrl(name);
+
+  if (typeof searchUrl !== "string") {
+    return fallbackUrl;
+  }
+
+  const trimmedSearchUrl = searchUrl.trim();
+
+  if (trimmedSearchUrl.length === 0) {
+    return fallbackUrl;
+  }
+
+  return normalizeTumonlineSearchUrl(trimmedSearchUrl, name);
 }
 
 function resolveZulipSubscriptionsUrl() {
@@ -211,10 +257,7 @@ function executeTumonlineAction(
     actionType: "tumonline",
     name,
     message: `TUMonline search is ready for ${name}.`,
-    navigationUrl: resolveNavigationUrl(
-      searchUrl,
-      buildTumonlineNavigationUrl(name),
-    ),
+    navigationUrl: resolveTumonlineNavigationUrl(name, searchUrl),
   };
 }
 

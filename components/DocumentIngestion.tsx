@@ -9,6 +9,7 @@ import type {
 import { useId, useRef, useState } from "react";
 import {
   CircleAlert,
+  CircleQuestionMark,
   CloudUpload,
   RefreshCw,
   ScanEye,
@@ -116,9 +117,11 @@ export default function DocumentIngestion({
   const inputId = useId();
   const zulipEmailId = useId();
   const zulipApiKeyId = useId();
+  const zulipApiKeyHelpId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isZulipApiKeyHelpOpen, setIsZulipApiKeyHelpOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [zulipEmail, setZulipEmail] = useState("");
   const [zulipApiKey, setZulipApiKey] = useState("");
@@ -311,8 +314,7 @@ export default function DocumentIngestion({
                   Drop your first lecture slides here
                 </h2>
                 <p className="mt-3 max-w-2xl font-mono text-sm leading-7 text-[var(--color-on-surface-variant)]">
-                  Or click to browse. Supported formats: .pdf, .doc, .docx,
-                  .ppt, .pptx for automated parsing and assignment.
+                  Or click to browse.
                 </p>
               </>
             )}
@@ -371,10 +373,93 @@ export default function DocumentIngestion({
             />
           </label>
 
-          <label className="block">
-            <span className="mb-2 block font-mono text-[0.68rem] uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]">
-              Zulip API key
-            </span>
+          <div className="relative block">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <label
+                htmlFor={zulipApiKeyId}
+                className="block font-mono text-[0.68rem] uppercase tracking-[0.22em] text-[var(--color-on-surface-variant)]"
+              >
+                Zulip API key
+              </label>
+              <button
+                type="button"
+                aria-expanded={isZulipApiKeyHelpOpen}
+                aria-controls={zulipApiKeyHelpId}
+                aria-label="Where can I find my Zulip API key?"
+                title="Where can I find my Zulip API key?"
+                onClick={() =>
+                  setIsZulipApiKeyHelpOpen((currentValue) => !currentValue)
+                }
+                className="inline-flex items-center justify-center text-[var(--color-primary)] transition hover:text-white"
+              >
+                <CircleQuestionMark className="h-4 w-4" strokeWidth={1.9} />
+              </button>
+            </div>
+            <div
+              id={zulipApiKeyHelpId}
+              aria-hidden={!isZulipApiKeyHelpOpen}
+              className={`pointer-events-none absolute right-0 bottom-full z-20 mb-3 w-80 max-w-[calc(100vw-2rem)] transition-all duration-200 ease-out motion-reduce:transition-none ${
+                isZulipApiKeyHelpOpen
+                  ? "pointer-events-auto translate-y-0 opacity-100"
+                  : "translate-y-2 opacity-0"
+              }`}
+            >
+              <div className="rounded-[14px] border border-[var(--color-primary)]/18 bg-[var(--color-surface-container)] p-3.5 shadow-[0_18px_40px_rgba(3,8,18,0.45)] backdrop-blur-sm">
+                <ol className="space-y-3 text-sm leading-6 text-white/92">
+                  <li className="grid grid-cols-[1.9rem_minmax(0,1fr)] items-start gap-3">
+                    <span className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-semibold text-[#04101a]">
+                      1
+                    </span>
+                    <span>
+                      Click the gear icon in the upper right corner of the web
+                      or desktop app.
+                    </span>
+                  </li>
+                  <li className="grid grid-cols-[1.9rem_minmax(0,1fr)] items-start gap-3">
+                    <span className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-semibold text-[#04101a]">
+                      2
+                    </span>
+                    <span>
+                      Select <strong>Personal settings</strong>.
+                    </span>
+                  </li>
+                  <li className="grid grid-cols-[1.9rem_minmax(0,1fr)] items-start gap-3">
+                    <span className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-semibold text-[#04101a]">
+                      3
+                    </span>
+                    <span>
+                      On the left, click <strong>Account &amp; privacy</strong>.
+                    </span>
+                  </li>
+                  <li className="grid grid-cols-[1.9rem_minmax(0,1fr)] items-start gap-3">
+                    <span className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-semibold text-[#04101a]">
+                      4
+                    </span>
+                    <span>
+                      Under <strong>API key</strong>, click{" "}
+                      <strong>Manage your API key</strong>.
+                    </span>
+                  </li>
+                  <li className="grid grid-cols-[1.9rem_minmax(0,1fr)] items-start gap-3">
+                    <span className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-semibold text-[#04101a]">
+                      5
+                    </span>
+                    <span>
+                      Enter your password and click{" "}
+                      <strong>Get API key</strong>. If you do not know your
+                      password, reset it and follow the instructions from there.
+                    </span>
+                  </li>
+                  <li className="grid grid-cols-[1.9rem_minmax(0,1fr)] items-start gap-3">
+                    <span className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-semibold text-[#04101a]">
+                      6
+                    </span>
+                    <span>Copy your API key.</span>
+                  </li>
+                </ol>
+                <div className="absolute right-5 top-full h-3 w-3 -translate-y-1/2 rotate-45 border-r border-b border-[var(--color-primary)]/18 bg-[var(--color-surface-container)]" />
+              </div>
+            </div>
             <input
               id={zulipApiKeyId}
               type="password"
@@ -385,7 +470,7 @@ export default function DocumentIngestion({
               placeholder="Optional"
               className="w-full rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface-bright)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[var(--color-primary)]/40"
             />
-          </label>
+          </div>
 
           <div className="flex flex-wrap gap-3 xl:justify-end">
             {selectedFile ? (

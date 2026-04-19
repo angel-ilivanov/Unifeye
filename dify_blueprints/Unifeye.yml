@@ -782,7 +782,7 @@ workflow:
       type: custom
       width: 242
     - data:
-        code: "import json\nfrom urllib.parse import quote\n\n\nTUMONLINE_SEARCH_URL\
+        code: "import json\nimport re\nfrom urllib.parse import quote\n\n\nTUMONLINE_SEARCH_URL\
           \ = (\n    \"https://campus.tum.de/tumonline/ee/ui/ca2/app/desktop/\"\n\
           \    \"#/slc.tm.cp/student/courses?$ctx=&$skip=0&objTermId=206&orgId=1&q={0}\"\
           \n)\n\n\ndef _extract_course_name(course) -> str:\n    if isinstance(course,\
@@ -793,7 +793,10 @@ workflow:
           \        return \"\"\n\n    if isinstance(course, dict):\n        priority\
           \ = course.get(\"priority\", \"\")\n        if priority is None:\n     \
           \       return \"\"\n        return str(priority)\n\n    return \"\"\n\n\
-          \ndef _encode_course_query(course_name: str) -> str:\n    # Start with a\
+          \ndef _normalize_tumonline_course_query(course_name: str) -> str:\n    return\
+          \ re.sub(\n        r\"^Grundlagenpraktikum(?:\\s*:\\s*|\\s+)\",\n   \
+          \     \"Grundlagenpraktikum: \",\n        course_name,\n    )\n\n\n\
+          def _encode_course_query(course_name: str) -> str:\n    # Start with a\
           \ fully encoded query, then decode only multibyte UTF-8\n    # sequences\
           \ so letters like \"ü\" remain readable while reserved\n    # characters\
           \ such as spaces stay safely encoded as \"%20\".\n    encoded_name = quote(course_name,\
@@ -824,7 +827,7 @@ workflow:
           \ list):\n        return {\"result\": json.dumps(payload, ensure_ascii=False)}\n\
           \n    for course in tumonline_courses:\n        course_name = _extract_course_name(course)\n\
           \n        if not course_name:\n            continue\n\n        priority\
-          \ = _extract_priority(course)\n        encoded_name = _encode_course_query(course_name)\n\
+          \ = _extract_priority(course)\n        encoded_name = _encode_course_query(_normalize_tumonline_course_query(course_name))\n\
           \        search_url = TUMONLINE_SEARCH_URL.format(encoded_name)\n\n    \
           \    payload[\"links\"].append(\n            {\n                \"course_name\"\
           : course_name,\n                \"priority\": priority,\n              \
@@ -859,7 +862,7 @@ workflow:
       type: custom
       width: 242
     - data:
-        code: "import json\nfrom datetime import date\nfrom urllib.parse import quote\n\
+        code: "import json\nimport re\nfrom datetime import date\nfrom urllib.parse import quote\n\
           \n\nTUMONLINE_EXAM_SEARCH_URL = (\n    \"https://campus.tum.de/tumonline/ee/ui/ca2/app/desktop/\"\
           \n    \"#/slc.xm.exr/exExamRegistration?$ctx=lang=DE&\"\n    \"$filter=curriculumVersionId-eq=-1;\"\
           \n    \"exExamDateFrom-gte={0};\"\n    \"exSemesterId-eq=-1;\"\n    \"q-likeI={1}&\"\
@@ -877,7 +880,10 @@ workflow:
           \ str):\n        return \"\"\n\n    if isinstance(exam, dict):\n       \
           \ priority = exam.get(\"priority\", \"\")\n        if priority is None:\n\
           \            return \"\"\n        return str(priority)\n\n    return \"\"\
-          \n\n\ndef _encode_exam_query(exam_query: str) -> str:\n    # Start with\
+          \n\n\ndef _normalize_tumonline_exam_query(exam_query: str) -> str:\n    return\
+          \ re.sub(\n        r\"^Grundlagenpraktikum(?:\\s*:\\s*|\\s+)\",\n    \
+          \    \"Grundlagenpraktikum: \",\n        exam_query,\n    )\n\n\n\
+          def _encode_exam_query(exam_query: str) -> str:\n    # Start with\
           \ a fully encoded query, then decode only multibyte UTF-8\n    # sequences\
           \ so letters like \"ü\" remain readable while reserved\n    # characters\
           \ such as spaces stay safely encoded as \"%20\".\n    encoded_query = quote(exam_query,\
@@ -909,7 +915,7 @@ workflow:
           \n    exam_date_from = date.today().isoformat()\n\n    for exam in tumonline_exams:\n\
           \        exam_name = _extract_exam_name(exam)\n        exam_query = _extract_exam_query(exam)\n\
           \n        if not exam_name or not exam_query:\n            continue\n\n\
-          \        priority = _extract_priority(exam)\n        encoded_query = _encode_exam_query(exam_query)\n\
+          \        priority = _extract_priority(exam)\n        encoded_query = _encode_exam_query(_normalize_tumonline_exam_query(exam_query))\n\
           \        search_url = TUMONLINE_EXAM_SEARCH_URL.format(exam_date_from, encoded_query)\n\
           \n        payload[\"links\"].append(\n            {\n                \"\
           exam_name\": exam_name,\n                \"priority\": priority,\n     \

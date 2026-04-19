@@ -141,6 +141,8 @@ const STATUS_MESSAGES = [
 
 const TUMONLINE_PARENT_COURSE_PATTERN =
   /\b(tutorial|tutorials|ubung|ubungen|uebung|uebungen)\b/;
+const TUMONLINE_GRUNDLAGENPRAKTIKUM_PREFIX =
+  /^Grundlagenpraktikum(?:\s*:\s*|\s+)/u;
 
 const COURSE_HINT_STOP_WORDS = new Set([
   "an",
@@ -197,6 +199,33 @@ function normalizeLookupText(value: string) {
 
 function isTutorialLikeTumonlineTitle(title: string) {
   return TUMONLINE_PARENT_COURSE_PATTERN.test(normalizeLookupText(title));
+}
+
+function normalizeTumonlineQueryText(value: string) {
+  return value.replace(
+    TUMONLINE_GRUNDLAGENPRAKTIKUM_PREFIX,
+    "Grundlagenpraktikum: ",
+  );
+}
+
+function normalizeTumonlineSearchUrl(searchUrl: string, title: string) {
+  const trimmedSearchUrl = searchUrl.trim();
+
+  if (
+    trimmedSearchUrl.length === 0 ||
+    (!trimmedSearchUrl.includes("/student/courses") &&
+      !trimmedSearchUrl.includes("/exExamRegistration"))
+  ) {
+    return trimmedSearchUrl;
+  }
+
+  const encodedTitle = encodeURIComponent(normalizeTumonlineQueryText(title));
+
+  return trimmedSearchUrl.replace(
+    /([?&;])(q(?:-likeI)?|search)=[^&#;]*/gu,
+    (_match, separator: string, queryKey: string) =>
+      `${separator}${queryKey}=${encodedTitle}`,
+  );
 }
 
 function extractCourseMatchHints(title: string): CourseMatchHints {
@@ -382,7 +411,8 @@ function collectActionItems(
       [],
     {
       getTitle: (item) => item.course_name,
-      getSearchUrl: (item) => item.search_url,
+      getSearchUrl: (item) =>
+        normalizeTumonlineSearchUrl(item.search_url, item.course_name),
       source: "TUMonline Courses",
       actionType: "tumonline",
     },
@@ -392,7 +422,8 @@ function collectActionItems(
     executionResults.tumonline_exam_link?.links ?? [],
     {
       getTitle: (item) => item.exam_name,
-      getSearchUrl: (item) => item.search_url,
+      getSearchUrl: (item) =>
+        normalizeTumonlineSearchUrl(item.search_url, item.exam_name),
       source: "TUMonline Exams",
       actionType: "tumonline",
     },
@@ -418,7 +449,7 @@ function extractCourseCode(title: string, priority: ActionPriority) {
 
 function buildSidebarCourses(actionItems: ActionItem[]) {
   const courseActions = actionItems.filter(
-    (item) => item.source !== "Zulip" && item.source !== "TUMonline Exams",
+    (item) => item.source === "TUMonline Courses",
   );
 
   return courseActions.reduce<SidebarCourse[]>((items, item) => {
@@ -1078,7 +1109,9 @@ function Sidebar({
             <div>
               <div className="text-sm font-semibold text-white">Campus Agent</div>
               <div className="text-xs text-[var(--color-on-surface-variant)]">
-                {pendingActionCount} open actions in this workspace
+                {pendingActionCount === 0
+                  ? "No open actions in this workspace"
+                  : `${pendingActionCount} open action${pendingActionCount === 1 ? "" : "s"} in this workspace`}
               </div>
             </div>
           </div>
@@ -1149,7 +1182,7 @@ function PreviewTaskCard({
   return (
     <article
       className={`rounded-[12px] border px-3.5 py-3.5 ${
-        isZulipJoined
+        isSuccess
           ? "border-emerald-300/28 bg-[linear-gradient(145deg,rgba(16,185,129,0.18),rgba(11,17,32,0.96))] shadow-[0_0_0_1px_rgba(52,211,153,0.12)]"
           : isZulipAction
             ? "border-cyan-400/20 bg-[linear-gradient(145deg,rgba(34,211,238,0.08),rgba(11,17,32,0.94))]"
@@ -1338,8 +1371,8 @@ function ActionCard({
   return (
     <article
       className={`rounded-[14px] border p-3.5 ${
-        isZulipJoined
-          ? "border-emerald-300/30 bg-[linear-gradient(145deg,rgba(16,185,129,0.18),rgba(11,17,32,0.98))] shadow-[0_0_0_1px_rgba(52,211,153,0.1)]"
+        isSuccess
+          ? "border-emerald-300/38 bg-[linear-gradient(145deg,rgba(16,185,129,0.14),rgba(11,17,32,0.98))] shadow-[0_0_0_1px_rgba(52,211,153,0.14)]"
           : isZulipAction
             ? "border-cyan-400/20 bg-[linear-gradient(145deg,rgba(34,211,238,0.08),rgba(11,17,32,0.94))]"
             : "border-[var(--color-border)] bg-[var(--color-surface-bright)]"
@@ -1544,7 +1577,7 @@ function LandingView({
               <ChevronRight className="h-4 w-4" />
             </button>
             <div className="rounded-[10px] bg-[var(--color-surface-bright)] px-3 py-1.5 font-mono text-[0.68rem] uppercase tracking-[0.18em] text-[var(--color-on-surface-variant)]">
-              {pendingPreviewCount} pending
+              {pendingPreviewCount === 0 ? "All clear" : `${pendingPreviewCount} pending`}
             </div>
           </div>
         </div>
@@ -1561,8 +1594,8 @@ function LandingView({
           ) : (
             <div className="xl:col-span-2">
               <EmptyState
-                title="Nothing is queued yet"
-                body="Upload a document to surface the live plan items."
+                title="No tasks on your list"
+                body="Upload a document when you're ready and we'll build the next action set."
               />
             </div>
           )}
