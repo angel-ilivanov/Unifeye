@@ -5,7 +5,7 @@ Unifeye is an intelligent "semester onboarder" command center. Designed to elimi
 Simply upload your organizational slides (from Moodle or Artemis), and Unifeye reads the content, extracts the logistics, and creates a prioritized checklist. But it doesn't stop there—it acts on these tasks for you, such as automatically joining the required Zulip channels, directing you to Artemis course lists, and generating pre-filled search queries for instant TUMonline registration.
 
 <div align="center">
-  <img src="screenshots/Screenshot_2026-04-19_at_9.56.19.png" alt="Unifeye Dashboard" width="800"/>
+  <img src="screenshots/Screenshot_2026-04-19_at_9.56.55.png" alt="Unifeye Action Plan" width="800"/>
 </div>
 
 ## ✨ Key Features
@@ -24,7 +24,7 @@ Simply upload your organizational slides (from Moodle or Artemis), and Unifeye r
 - Dynamically re-scores and updates tasks as new documents are uploaded or as tasks are executed.
 
 <div align="center">
-  <img src="screenshots/Screenshot_2026-04-19_at_9.56.55.png" alt="Unifeye Action Plan" width="800"/>
+  <img src="screenshots/Screenshot_2026-04-19_at_9.56.19.png" alt="Unifeye Dashboard" width="800"/>
 </div>
 
 ### 💬 3. Zulip Channel Integration
