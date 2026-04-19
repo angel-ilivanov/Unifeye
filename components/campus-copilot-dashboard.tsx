@@ -141,6 +141,8 @@ const STATUS_MESSAGES = [
 
 const TUMONLINE_PARENT_COURSE_PATTERN =
   /\b(tutorial|tutorials|ubung|ubungen|uebung|uebungen)\b/;
+const TUMONLINE_GRUNDLAGENPRAKTIKUM_PREFIX =
+  /^Grundlagenpraktikum(?:\s*:\s*|\s+)/u;
 
 const COURSE_HINT_STOP_WORDS = new Set([
   "an",
@@ -197,6 +199,33 @@ function normalizeLookupText(value: string) {
 
 function isTutorialLikeTumonlineTitle(title: string) {
   return TUMONLINE_PARENT_COURSE_PATTERN.test(normalizeLookupText(title));
+}
+
+function normalizeTumonlineQueryText(value: string) {
+  return value.replace(
+    TUMONLINE_GRUNDLAGENPRAKTIKUM_PREFIX,
+    "Grundlagenpraktikum: ",
+  );
+}
+
+function normalizeTumonlineSearchUrl(searchUrl: string, title: string) {
+  const trimmedSearchUrl = searchUrl.trim();
+
+  if (
+    trimmedSearchUrl.length === 0 ||
+    (!trimmedSearchUrl.includes("/student/courses") &&
+      !trimmedSearchUrl.includes("/exExamRegistration"))
+  ) {
+    return trimmedSearchUrl;
+  }
+
+  const encodedTitle = encodeURIComponent(normalizeTumonlineQueryText(title));
+
+  return trimmedSearchUrl.replace(
+    /([?&;])(q(?:-likeI)?|search)=[^&#;]*/gu,
+    (_match, separator: string, queryKey: string) =>
+      `${separator}${queryKey}=${encodedTitle}`,
+  );
 }
 
 function extractCourseMatchHints(title: string): CourseMatchHints {
@@ -382,7 +411,8 @@ function collectActionItems(
       [],
     {
       getTitle: (item) => item.course_name,
-      getSearchUrl: (item) => item.search_url,
+      getSearchUrl: (item) =>
+        normalizeTumonlineSearchUrl(item.search_url, item.course_name),
       source: "TUMonline Courses",
       actionType: "tumonline",
     },
@@ -392,7 +422,8 @@ function collectActionItems(
     executionResults.tumonline_exam_link?.links ?? [],
     {
       getTitle: (item) => item.exam_name,
-      getSearchUrl: (item) => item.search_url,
+      getSearchUrl: (item) =>
+        normalizeTumonlineSearchUrl(item.search_url, item.exam_name),
       source: "TUMonline Exams",
       actionType: "tumonline",
     },
