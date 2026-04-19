@@ -60,7 +60,13 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+### Dify Backend Setup (AI Intelligence)
+
+The core logic of Unifeye is powered by a Dify workflow. To set it up:
+
+1.  **Import Blueprint:** Import the `dify_blueprints/Unifeye.yml` file into your [Dify](https://dify.ai/) workspace.
+2.  **API Key:** Once imported, go to the **API Access** section in Dify, generate an API Key, and add it to your `.env.local` as `DIFY_API_KEY`.
+3.  **API URL:** Set `DIFY_API_URL` to your Dify instance URL (e.g., `https://api.dify.ai/v1/workflows/run`).
 
 ### Required environment variables
 
