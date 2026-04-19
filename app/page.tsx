@@ -7,12 +7,42 @@ const demoPayload: CampusCopilotPayload = {
   execution_results: {
     zulip_status: {
       status: "complete",
-      subscribed: [
-        "IN0001 Introduction to Informatics",
-        "IN0002 Fundamentals of Programming",
-        "IN0015 Discrete Structures",
-      ],
+      subscribed: ["IN0001 Introduction to Informatics"],
     },
+    zulip_channels: [
+      {
+        name: "IN0002 Fundamentals of Programming",
+        priority: "do_now",
+      },
+      {
+        name: "IN0015 Discrete Structures",
+        priority: "schedule",
+      },
+    ],
+    artemis_courses: [
+      {
+        course_name: "Complete IN0002 Assignment 3",
+        priority: "do_now",
+        search_url: "https://artemis.example.com/courses/in0002/assignments/3",
+      },
+      {
+        course_name: "Review IN0015 tutorial material",
+        priority: "schedule",
+        search_url: "https://artemis.example.com/courses/in0015/materials",
+      },
+    ],
+    tumonline_courses: [
+      {
+        course_name: "Enroll in Computer Architecture",
+        priority: "schedule",
+        search_url: "https://campus.tum.de/tumonline/course-search",
+      },
+      {
+        course_name: "Enroll in Institutional Systems Lab",
+        priority: "do_now",
+        search_url: "https://campus.tum.de/tumonline/lab-search",
+      },
+    ],
     artemis_link: {
       links: [
         {
@@ -54,5 +84,5 @@ const demoPayload: CampusCopilotPayload = {
 };
 
 export default function HomePage() {
-  return <CampusCopilotDashboard payload={demoPayload} />;
+  return <CampusCopilotDashboard initialPayload={demoPayload} />;
 }

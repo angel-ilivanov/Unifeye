@@ -1,14 +1,104 @@
 @import "tailwindcss";
 
-html,
-body {
+:root {
+  --color-surface: #05070a;
+  --color-surface-container: #0a0d14;
+  --color-surface-bright: #121826;
+  --color-primary: #00d1ff;
+  --color-primary-dim: rgba(0, 209, 255, 0.16);
+  --color-on-surface: #fbfbfe;
+  --color-on-surface-variant: #94a3b8;
+  --color-border: rgba(255, 255, 255, 0.08);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
   min-height: 100%;
+  background: var(--color-surface);
 }
 
 body {
   min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at top, rgba(0, 209, 255, 0.13), transparent 34%),
+    radial-gradient(circle at 85% 18%, rgba(0, 209, 255, 0.06), transparent 22%),
+    var(--color-surface);
+  color: var(--color-on-surface);
 }
 
-* {
-  box-sizing: border-box;
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: rgba(0, 209, 255, 0.24);
+}
+
+.glass-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02)),
+    rgba(10, 13, 20, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 24px rgba(0, 209, 255, 0.16);
+}
+
+.glow-cyan-strong {
+  box-shadow: 0 0 38px rgba(0, 209, 255, 0.26);
+}
+
+.text-glow {
+  text-shadow: 0 0 16px rgba(0, 209, 255, 0.28);
+}
+
+.animate-breathe {
+  animation: breathe 1.6s ease-in-out infinite;
+}
+
+.scrollbar-custom::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(0, 209, 255, 0.28);
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 209, 255, 0.5);
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 8px rgba(0, 209, 255, 0.16));
+  }
+
+  50% {
+    transform: scale(1.08);
+    filter: drop-shadow(0 0 18px rgba(0, 209, 255, 0.42));
+  }
 }

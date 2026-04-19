@@ -1,15 +1,24 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
+import {
+  JetBrains_Mono,
+  Plus_Jakarta_Sans,
+  Space_Grotesk,
+} from "next/font/google";
 import type { ReactNode } from "react";
 
 import "./globals.css";
 
-const sans = Space_Grotesk({
+const sans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-sans",
 });
 
-const mono = IBM_Plex_Mono({
+const display = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-display",
+});
+
+const mono = JetBrains_Mono({
   subsets: ["latin"],
   weight: ["400", "500"],
   variable: "--font-mono",
@@ -26,9 +35,9 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    <html lang="en" className="bg-slate-950">
+    <html lang="en">
       <body
-        className={`${sans.variable} ${mono.variable} bg-slate-950 font-[family-name:var(--font-sans)] text-slate-50 antialiased`}
+        className={`${sans.variable} ${display.variable} ${mono.variable} bg-[var(--color-surface)] font-[family-name:var(--font-sans)] text-[var(--color-on-surface)] antialiased`}
       >
         {children}
       </body>
